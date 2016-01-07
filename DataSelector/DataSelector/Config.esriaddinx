@@ -1,0 +1,20 @@
+﻿<ESRI.Configuration xmlns="http://schemas.esri.com/Desktop/AddIns" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <Name>DataSelector</Name>
+  <AddInID>{b858bb02-f5c6-4c49-886a-96f8d918d8a7}</AddInID>
+  <Description>Data selection tool designed for Sussex Environmental Records Centre.</Description>
+  <Version>1.0</Version>
+  <Image>Images\DataSelector.png</Image>
+  <Author>Hester Lyons</Author>
+  <Company>Hester Lyons Consulting</Company>
+  <Date>07/01/2016</Date>
+  <Targets>
+    <Target name="Desktop" version="10.2" />
+  </Targets>
+  <AddIn language="CLR4.0" library="DataSelector.dll" namespace="DataSelector">
+    <ArcMap>
+      <Commands>
+        <Button id="Hester_Lyons_Consulting_DataSelector_Button1" class="LaunchDataSelector" message="Data extractor tool for Sussex Environmental Records Centre. Define SQL query, results are shown in ArcMap and saved locally." caption="Data Selector" tip="Extract data from species database through SQL query" category="Add-In Controls" image="Images\Button1.png" />
+      </Commands>
+    </ArcMap>
+  </AddIn>
+</ESRI.Configuration>

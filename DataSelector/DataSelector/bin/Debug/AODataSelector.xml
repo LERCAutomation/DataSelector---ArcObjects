@@ -53,12 +53,6 @@ as a spreadsheet.
     <DatabaseSchema>
 	    <value>dbo</value>
     </DatabaseSchema>
-
-    <!-- The SQL statement used to list all the species tables in SQL Server that can be selected
-         by the user to extract from -->
-    <TableListSQL>
-	    <value>Select table_name From information_schema.tables Where table_name Like 'TVERC[_]Spp[_]%' Order By table_name</value>
-    </TableListSQL>
     
     <!-- the Include wildcard for table names to list all the species tables in SQL Server that can be selected
          by the user to extract from -->

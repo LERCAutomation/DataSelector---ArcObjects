@@ -29,7 +29,7 @@ namespace DataSelector
             string strSDE = myConfig.GetSDEName();
             string strIncludeWildcard = myConfig.GetIncludeWildcard();
             string strExcludeWildcard = myConfig.GetExcludeWildcard();
-            string strQuery = myConfig.GetTableListSQL();
+            //MessageBox.Show(strSDE);
             IWorkspace wsSQLWorkspace = mySQLFuncs.OpenSQLServerConnection(strSDE);
             List<string> strTableList = mySQLFuncs.GetTableNames(wsSQLWorkspace, strIncludeWildcard, strExcludeWildcard);
             foreach (string strItem in strTableList)

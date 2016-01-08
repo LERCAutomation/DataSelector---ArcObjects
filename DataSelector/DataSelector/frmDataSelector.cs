@@ -9,18 +9,35 @@ using System.Text;
 using System.Windows.Forms;
 
 using HLSelectorToolConfig;
+using HLESRISQLServerFunctions;
+
+using ESRI.ArcGIS.Geodatabase;
 
 namespace DataSelector
 {
     public partial class frmDataSelector : Form
     {
         SelectorToolConfig myConfig;
+        ESRISQLServerFunctions mySQLFuncs;
         public frmDataSelector()
         {
             InitializeComponent();
             // Fill with the relevant.
             myConfig = new SelectorToolConfig(); // Should find the config file automatically.
+            mySQLFuncs = new ESRISQLServerFunctions();
+            // fill the list box with SQL tables
+            string strSDE = myConfig.GetSDEName();
+            string strIncludeWildcard = myConfig.GetIncludeWildcard();
+            string strExcludeWildcard = myConfig.GetExcludeWildcard();
+            string strQuery = myConfig.GetTableListSQL();
+            IWorkspace wsSQLWorkspace = mySQLFuncs.OpenSQLServerConnection(strSDE);
+            List<string> strTableList = mySQLFuncs.GetTableNames(wsSQLWorkspace, strIncludeWildcard, strExcludeWildcard);
+            foreach (string strItem in strTableList)
+            {
+                lstTables.Items.Add(strItem);
+            }
 
+            
         }
 
         private void btnCancel_Click(object sender, EventArgs e)

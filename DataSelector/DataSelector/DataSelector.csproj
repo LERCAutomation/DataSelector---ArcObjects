@@ -81,6 +81,7 @@
     <Compile Include="HLFileFunctions.cs" />
     <Compile Include="HLSelectorToolConfig.cs" />
     <Compile Include="HLSQLServerFunctions.cs" />
+    <Compile Include="HLStringFunctions.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

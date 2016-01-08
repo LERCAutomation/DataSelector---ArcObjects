@@ -53,13 +53,19 @@ as a spreadsheet.
     <DatabaseSchema>
 	    <value>dbo</value>
     </DatabaseSchema>
-
-    <!-- The SQL statement used to list all the species tables in SQL Server that can be selected
+    
+    <!-- the Include wildcard for table names to list all the species tables in SQL Server that can be selected
          by the user to extract from -->
-    <TableListSQL>
-	    <value>Select table_name From information_schema.tables Where table_name Like 'TVERC[_]Spp[_]%' Order By table_name</value>
-    </TableListSQL>
+    <IncludeWildcard>
+      <value>*TVERC_Spp_*</value>
+    </IncludeWildcard>
 
+    <!-- the Exclude wildcard for table names that should NOT be used for species tables in SQL Server that can be selected
+         by the user to extract from -->
+    <ExcludeWildcard>
+      <value>*TVERC_Spp_*_*</value>
+    </ExcludeWildcard>
+    
     <!-- The maximum number of records what will be extracted in any one extract -->
     <RecMax>
 	    <value>10000000</value>

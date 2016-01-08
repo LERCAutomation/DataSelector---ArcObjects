@@ -7,13 +7,12 @@ using System.Windows.Forms;
 using ESRI.ArcGIS.Geodatabase;
 using ESRI.ArcGIS.ArcMapUI;
 using ESRI.ArcGIS.Carto;
+using HLStringFunctions;
 
-
-namespace HLSQLServerFunctions
+namespace HLESRISQLServerFunctions
 {
-    public class SQLServerFunctions
+    public class ESRISQLServerFunctions
     {
-        #region OpenSQLServerConnection
         // For example, connectionFile = @"C:\myData\Connection to Kona.sde".
         public IWorkspace OpenSQLServerConnection(String connectionFile)
         {
@@ -21,10 +20,39 @@ namespace HLSQLServerFunctions
             IWorkspaceFactory workspaceFactory = (IWorkspaceFactory)Activator.CreateInstance(factoryType);
             return workspaceFactory.OpenFromFile(connectionFile, 0);
         }
-        #endregion
 
-        
+        public List<string> GetTableNames(IWorkspace aWorkspace, string IncludeWildcard, string ExcludeWildcard, bool IncludeFullName = false)
+        {
+            // Define the wildcards 
+            Wildcard theInclude = new Wildcard(IncludeWildcard);
+            Wildcard theExclude = new Wildcard(ExcludeWildcard);
 
-        
+            List<string> theStringList = new List<string>();
+            IEnumDatasetName enumDatasetName = aWorkspace.get_DatasetNames(esriDatasetType.esriDTAny);
+            IDatasetName datasetName = enumDatasetName.Next();
+            while (datasetName != null)
+            {
+                string strName = datasetName.Name;
+                // Does the name conform to the IncludeWildcard?
+                if (theInclude.IsMatch(strName))
+                {
+                    if (!theExclude.IsMatch(strName))
+                    {
+                        if (IncludeFullName)
+                        {
+                            theStringList.Add(strName);
+                        }
+                        else
+                        {
+                            strName = strName.Split('.')[2];
+                            theStringList.Add(strName);
+                        }
+                    }
+                }
+                datasetName = enumDatasetName.Next();
+            }
+            return theStringList;
+        }
+    
     }
 }

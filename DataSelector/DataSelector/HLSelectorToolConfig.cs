@@ -20,7 +20,8 @@ namespace HLSelectorToolConfig
         string DefaultQueryPath;
         string DefaultFormat;
         string DatabaseSchema;
-        string TableListSQL;
+        string IncludeWildcard;
+        string ExcludeWildcard;
         string RecMax;
         string DefaultSetSymbology;
         string LayerLocation;
@@ -52,7 +53,8 @@ namespace HLSelectorToolConfig
             DefaultQueryPath = xmlDataSelector["DefaultQueryPath"].InnerText;
             DefaultFormat = xmlDataSelector["DefaultFormat"].InnerText;
             DatabaseSchema = xmlDataSelector["DatabaseSchema"].InnerText;
-            TableListSQL = xmlDataSelector["TableListSQL"].InnerText;
+            IncludeWildcard = xmlDataSelector["IncludeWildcard"].InnerText;
+            ExcludeWildcard = xmlDataSelector["ExcludeWildcard"].InnerText;
             RecMax = xmlDataSelector["RecMax"].InnerText;
             DefaultSetSymbology = xmlDataSelector["DefaultSetSymbology"].InnerText;
             LayerLocation = xmlDataSelector["LayerLocation"].InnerText;
@@ -92,9 +94,14 @@ namespace HLSelectorToolConfig
             return DatabaseSchema;
         }
 
-        public string GetTableListSQL()
+        public string GetIncludeWildcard()
         {
-            return TableListSQL;
+            return IncludeWildcard;
+        }
+
+        public string GetExcludeWildcard()
+        {
+            return ExcludeWildcard;
         }
 
         public string GetRecMax()

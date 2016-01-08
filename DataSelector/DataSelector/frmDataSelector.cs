@@ -8,13 +8,19 @@ using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 
+using HLSelectorToolConfig;
+
 namespace DataSelector
 {
     public partial class frmDataSelector : Form
     {
+        SelectorToolConfig myConfig;
         public frmDataSelector()
         {
             InitializeComponent();
+            // Fill with the relevant.
+            myConfig = new SelectorToolConfig(); // Should find the config file automatically.
+
         }
 
         private void btnCancel_Click(object sender, EventArgs e)

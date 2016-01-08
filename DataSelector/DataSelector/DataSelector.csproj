@@ -78,6 +78,8 @@
       <DependentUpon>frmDataSelector.cs</DependentUpon>
     </Compile>
     <Compile Include="HLArcMapModule.cs" />
+    <Compile Include="HLFileFunctions.cs" />
+    <Compile Include="HLSelectorToolConfig.cs" />
     <Compile Include="HLSQLServerFunctions.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
@@ -104,6 +106,12 @@
     <EmbeddedResource Include="frmDataSelector.resx">
       <DependentUpon>frmDataSelector.cs</DependentUpon>
     </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="AODataSelector.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <SubType>Designer</SubType>
+    </Content>
   </ItemGroup>
   <PropertyGroup>
     <ZipFileExtension>esriAddIn</ZipFileExtension>

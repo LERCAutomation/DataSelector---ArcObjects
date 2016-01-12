@@ -9,12 +9,16 @@ using ESRI.ArcGIS.ArcMapUI;
 using ESRI.ArcGIS.Carto;
 using HLStringFunctions;
 
+using System.Data;
+using System.Data.SqlClient;
+
+
 namespace HLESRISQLServerFunctions
 {
     public class ESRISQLServerFunctions
     {
         // For example, connectionFile = @"C:\myData\Connection to Kona.sde".
-        public IWorkspace OpenSQLServerConnection(String connectionFile)
+        public IWorkspace OpenArcSDEConnection(String connectionFile)
         {
             Type factoryType = Type.GetTypeFromProgID("esriDataSourcesGDB.SdeWorkspaceFactory");
             IWorkspaceFactory workspaceFactory = (IWorkspaceFactory)Activator.CreateInstance(factoryType);
@@ -54,5 +58,31 @@ namespace HLESRISQLServerFunctions
             return theStringList;
         }
     
+    }
+
+    public class ADOSQLServerFunctions
+    {
+        public SqlConnection CreateSQLConnection(string connectionString)
+        {
+            SqlConnection con = new SqlConnection(connectionString);
+            return con;
+        }
+
+        public SqlCommand CreateSQLCommand(ref SqlConnection aConnection, string aName, CommandType aCommandType)
+        {
+            SqlCommand myCmd = new SqlCommand(aName, aConnection);
+            myCmd.CommandType = aCommandType;
+            return myCmd;
+        }
+
+        public bool AddSQLParameter(ref SqlCommand aCommand, string aName, string aValue)
+        {
+            // Note we are passing the value as a string as this will eventually become an overloaded method which will accept
+            // different types of data. For the moment we only need string.
+            SqlParameter myParameter = aCommand.Parameters.Add(aName, System.Data.SqlDbType.VarChar);
+            myParameter.Value = aValue;
+            return true;
+        }
+
     }
 }

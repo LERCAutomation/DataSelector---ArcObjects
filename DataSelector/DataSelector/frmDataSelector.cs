@@ -13,36 +13,45 @@ using HLESRISQLServerFunctions;
 
 using ESRI.ArcGIS.Geodatabase;
 
+// Unfortunately we also need ADO.Net in order to run the stored procedures with parameters...
+using System.Data.SqlClient;
+
+
 namespace DataSelector
 {
     public partial class frmDataSelector : Form
     {
         SelectorToolConfig myConfig;
-        ESRISQLServerFunctions mySQLFuncs;
+        ESRISQLServerFunctions myArcSDEFuncs;
+        ADOSQLServerFunctions myADOFuncs;
         public frmDataSelector()
         {
             InitializeComponent();
             // Fill with the relevant.
             myConfig = new SelectorToolConfig(); // Should find the config file automatically.
-            mySQLFuncs = new ESRISQLServerFunctions();
+            myArcSDEFuncs = new ESRISQLServerFunctions();
+            myADOFuncs = new ADOSQLServerFunctions();
             // fill the list box with SQL tables
             string strSDE = myConfig.GetSDEName();
             string strIncludeWildcard = myConfig.GetIncludeWildcard();
             string strExcludeWildcard = myConfig.GetExcludeWildcard();
             //MessageBox.Show(strSDE);
-            IWorkspace wsSQLWorkspace = mySQLFuncs.OpenSQLServerConnection(strSDE);
-            List<string> strTableList = mySQLFuncs.GetTableNames(wsSQLWorkspace, strIncludeWildcard, strExcludeWildcard);
+            IWorkspace wsSQLWorkspace = myArcSDEFuncs.OpenArcSDEConnection(strSDE);
+            List<string> strTableList = myArcSDEFuncs.GetTableNames(wsSQLWorkspace, strIncludeWildcard, strExcludeWildcard);
             foreach (string strItem in strTableList)
             {
                 lstTables.Items.Add(strItem);
             }
-
+            // Close the SQL connection
+            wsSQLWorkspace = null;
+            // However keep the Config and SQLFuncs objects alive for use later in the form.
             
         }
 
         private void btnCancel_Click(object sender, EventArgs e)
         {
             this.Close();
+
         }
 
         private void btnSave_Click(object sender, EventArgs e)
@@ -107,8 +116,39 @@ namespace DataSelector
             theResult = theResult + "order by: " + txtOrderBy.Text + ", ";
             theResult = theResult + "group by: " + txtGroupBy.Text + ", ";
             theResult = theResult + "table names: " + lstTables.Text;
-            MessageBox.Show(theResult);
+            //MessageBox.Show(theResult);
 
+            // Connect to SQL server
+            //IWorkspace wsSQLWorkspace = myArcSDEFuncs.OpenArcSDEConnection(myConfig.GetSDEName());
+
+            // Run the query
+            string sDefaultSchema = "dbo";
+            string sTableName = "TVERC_Spp_Full";
+            string sColumnNames = "*";
+            string sWhereClause = "TaxonGroup = 'Birds'";
+            string sGroupClause = "";
+            string sOrderClause = "";
+            string sUserID = "Hezz";
+
+
+            MessageBox.Show(myConfig.GetConnectionString());
+            SqlConnection dbConn = myADOFuncs.CreateSQLConnection(myConfig.GetConnectionString());
+            MessageBox.Show("Connection created");
+            SqlCommand myCommand = myADOFuncs.CreateSQLCommand(ref dbConn, "AFHLSelectSppSubset", CommandType.StoredProcedure); // Note pass connection by ref here.
+            MessageBox.Show("Command created");
+            myADOFuncs.AddSQLParameter(ref myCommand, "Schema", sDefaultSchema);
+            MessageBox.Show("First parameter added");
+            myADOFuncs.AddSQLParameter(ref myCommand, "SpeciesTable", sTableName);
+            myADOFuncs.AddSQLParameter(ref myCommand, "ColumnNames", sColumnNames);
+            myADOFuncs.AddSQLParameter(ref myCommand, "WhereClause", sWhereClause);
+            myADOFuncs.AddSQLParameter(ref myCommand, "GroupByClause", sGroupClause);
+            myADOFuncs.AddSQLParameter(ref myCommand, "OrderByClause", sOrderClause);
+            myADOFuncs.AddSQLParameter(ref myCommand, "UserID", sUserID);
+
+            dbConn.Open();
+            MessageBox.Show("Connection opened");
+            string strRowsAffect = myCommand.ExecuteNonQuery().ToString();
+            MessageBox.Show("procedure run");
         }
     }
 }

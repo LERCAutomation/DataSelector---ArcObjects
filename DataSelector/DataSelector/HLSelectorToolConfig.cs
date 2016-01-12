@@ -7,6 +7,7 @@ using System.Xml;
 using System.Windows.Forms;
 using HLFileFunctions;
 
+
 // This module reads the config XML file and stores the results
 
 namespace HLSelectorToolConfig
@@ -15,6 +16,7 @@ namespace HLSelectorToolConfig
     {
         // Declare all the variables
         string FileDSN;
+        string ConnectionString;
         string LogFilePath;
         string DefaultExtractPath;
         string DefaultQueryPath;
@@ -48,6 +50,7 @@ namespace HLSelectorToolConfig
 
             // Get all of the detail into the object
             FileDSN = xmlDataSelector["FileDSN"].InnerText;
+            ConnectionString = xmlDataSelector["ConnectionString"].InnerText;
             LogFilePath = xmlDataSelector["LogFilePath"].InnerText;
             DefaultExtractPath = xmlDataSelector["DefaultExtractPath"].InnerText;
             DefaultQueryPath = xmlDataSelector["DefaultQueryPath"].InnerText;
@@ -59,14 +62,17 @@ namespace HLSelectorToolConfig
             DefaultSetSymbology = xmlDataSelector["DefaultSetSymbology"].InnerText;
             LayerLocation = xmlDataSelector["LayerLocation"].InnerText;
             EnableSpatialPlotting = xmlDataSelector["EnableSpatialPlotting"].InnerText;
-
-
         }
 
         // Functions to return each element under here.
         public string GetSDEName()
         {
             return FileDSN;
+        }
+
+        public string GetConnectionString()
+        {
+            return ConnectionString;
         }
 
         public string GetLogFilePath()

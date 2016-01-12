@@ -29,11 +29,16 @@ as a spreadsheet.
 	    <value>H:\Dev\LERCAutomation\DataSelector---ArcObjects\LogFiles</value>
     </LogFilePath>
 
-    <!-- The location of the File DSN that specifies which SQL Server database to connect to -->
+    <!-- The location of the File DSN that specifies to ESRI which SQL Server database to connect to -->
     <FileDSN>
 	    <value>H:\Dev\LERCAutomation\DataSelector---ArcObjects\Config\TVERCConn2.sde</value>
     </FileDSN>
 
+    <!-- Connection string for ADO connection (to allow stored procedures to be run with parameters) -->
+    <ConnectionString>
+      <value>Server=SONY-VAIO\SQLEXPRESS; Database=NBNData_TVERC; Integrated Security=True;</value>
+    </ConnectionString>
+    
     <!-- The existing file location where extracts will be saved by default -->
     <DefaultExtractPath>
 	    <value>H:\Dev\LERCAutomation\DataSelector---ArcObjects\Extracts</value>

@@ -28,8 +28,28 @@ namespace HLArcMapModule
         }
         #endregion
 
-        #region AddLayerFromFClass
-        public bool AddLayerFromFClass(IMap theMap, IFeatureClass theFeatureClass, bool Messages = false)
+        public IMxDocument GetIMXDocument()
+        {
+            ESRI.ArcGIS.ArcMapUI.IMxDocument mxDocument = ((ESRI.ArcGIS.ArcMapUI.IMxDocument)(thisApplication.Document));
+            return mxDocument;
+        }
+
+
+
+        public ESRI.ArcGIS.Carto.IMap GetMap()
+        {
+            if (thisApplication == null)
+            {
+                return null;
+            }
+            ESRI.ArcGIS.ArcMapUI.IMxDocument mxDocument = ((ESRI.ArcGIS.ArcMapUI.IMxDocument)(thisApplication.Document)); // Explicit Cast
+            ESRI.ArcGIS.Carto.IActiveView activeView = mxDocument.ActiveView;
+            ESRI.ArcGIS.Carto.IMap map = activeView.FocusMap;
+
+            return map;
+        }
+
+        public bool AddLayerFromFClass(IFeatureClass theFeatureClass, bool Messages = false)
         {
             // Check we have input
             if (theFeatureClass == null)
@@ -40,7 +60,7 @@ namespace HLArcMapModule
                 }
                 return false;
             }
-            IMap pMap = theMap;
+            IMap pMap = GetMap();
             if (pMap == null)
             {
                 if (Messages)
@@ -57,6 +77,38 @@ namespace HLArcMapModule
             return true;
         }
 
-        #endregion
+        public bool AddLayerFromTable(ITable theTable, string aName, bool Messages = false)
+        {
+            // check we have nput
+            if (theTable == null)
+            {
+                if (Messages)
+                {
+                    MessageBox.Show("Please pass a table", "Add Layer From Table");
+                }
+                return false;
+            }
+            IMap pMap = GetMap();
+            if (pMap == null)
+            {
+                if (Messages)
+                {
+                    MessageBox.Show("No map found", "Add Layer From Feature Class");
+                }
+                return false;
+            }
+            IStandaloneTableCollection pStandaloneTableCollection = (IStandaloneTableCollection)pMap;
+            IStandaloneTable pTable = new StandaloneTable();
+            pTable.Table = theTable;
+            pTable.Name = aName;
+
+            IMxDocument mxDoc = GetIMXDocument();
+            pStandaloneTableCollection.AddStandaloneTable(pTable);
+            mxDoc.UpdateContents();
+            return true;
+        }
+
+
+ 
     }
 }

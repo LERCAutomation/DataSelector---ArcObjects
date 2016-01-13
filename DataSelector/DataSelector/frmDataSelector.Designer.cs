@@ -46,7 +46,7 @@
             this.btnLoad = new System.Windows.Forms.Button();
             this.btnCancel = new System.Windows.Forms.Button();
             this.btnOK = new System.Windows.Forms.Button();
-            this.textBox1 = new System.Windows.Forms.TextBox();
+            this.txtOutputFile = new System.Windows.Forms.TextBox();
             this.label3 = new System.Windows.Forms.Label();
             this.button1 = new System.Windows.Forms.Button();
             this.SuspendLayout();
@@ -222,12 +222,12 @@
             this.btnOK.UseVisualStyleBackColor = true;
             this.btnOK.Click += new System.EventHandler(this.btnOK_Click);
             // 
-            // textBox1
+            // txtOutputFile
             // 
-            this.textBox1.Location = new System.Drawing.Point(329, 204);
-            this.textBox1.Name = "textBox1";
-            this.textBox1.Size = new System.Drawing.Size(167, 20);
-            this.textBox1.TabIndex = 18;
+            this.txtOutputFile.Location = new System.Drawing.Point(329, 204);
+            this.txtOutputFile.Name = "txtOutputFile";
+            this.txtOutputFile.Size = new System.Drawing.Size(167, 20);
+            this.txtOutputFile.TabIndex = 18;
             // 
             // label3
             // 
@@ -254,7 +254,7 @@
             this.ClientSize = new System.Drawing.Size(547, 502);
             this.Controls.Add(this.button1);
             this.Controls.Add(this.label3);
-            this.Controls.Add(this.textBox1);
+            this.Controls.Add(this.txtOutputFile);
             this.Controls.Add(this.btnOK);
             this.Controls.Add(this.btnCancel);
             this.Controls.Add(this.btnLoad);
@@ -300,7 +300,7 @@
         private System.Windows.Forms.Button btnLoad;
         private System.Windows.Forms.Button btnCancel;
         private System.Windows.Forms.Button btnOK;
-        private System.Windows.Forms.TextBox textBox1;
+        private System.Windows.Forms.TextBox txtOutputFile;
         private System.Windows.Forms.Label label3;
         private System.Windows.Forms.Button button1;
     }

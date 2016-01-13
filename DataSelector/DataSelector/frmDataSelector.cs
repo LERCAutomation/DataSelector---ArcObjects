@@ -10,8 +10,11 @@ using System.Windows.Forms;
 
 using HLSelectorToolConfig;
 using HLESRISQLServerFunctions;
+using HLArcMapModule;
 
 using ESRI.ArcGIS.Geodatabase;
+using ESRI.ArcGIS.esriSystem;
+using ESRI.ArcGIS.Framework;
 
 // Unfortunately we also need ADO.Net in order to run the stored procedures with parameters...
 using System.Data.SqlClient;
@@ -110,34 +113,55 @@ namespace DataSelector
 
         private void btnOK_Click(object sender, EventArgs e)
         {
-            string theResult = "The form contains the following: ";
-            theResult = theResult + "columns: " + txtColumns.Text + ", ";
-            theResult = theResult + "where clause: " + txtWhere.Text + ", ";
-            theResult = theResult + "order by: " + txtOrderBy.Text + ", ";
-            theResult = theResult + "group by: " + txtGroupBy.Text + ", ";
-            theResult = theResult + "table names: " + lstTables.Text;
-            //MessageBox.Show(theResult);
+            // Run the query. Everything else is allowed to be null.
+            string sDefaultSchema = myConfig.GetDatabaseSchema();  // "dbo";
+            string sTableName = lstTables.Text;  //"TVERC_Spp_Full";
+            string sColumnNames = txtColumns.Text; // "*";
+            string sWhereClause = txtWhere.Text; // "TaxonGroup = 'Birds'";
+            string sGroupClause = txtGroupBy.Text; // "";
+            string sOrderClause = txtOrderBy.Text; // "";
+            string sUserID = Environment.UserName;
 
-            // Connect to SQL server
-            //IWorkspace wsSQLWorkspace = myArcSDEFuncs.OpenArcSDEConnection(myConfig.GetSDEName());
+            // Do some basic checks and fix as required.
+            // User ID should be something at least
+            if (string.IsNullOrEmpty(sUserID))
+            {
+                sUserID = "Temp";
+            }
 
-            // Run the query
-            string sDefaultSchema = "dbo";
-            string sTableName = "TVERC_Spp_Full";
-            string sColumnNames = "*";
-            string sWhereClause = "TaxonGroup = 'Birds'";
-            string sGroupClause = "";
-            string sOrderClause = "";
-            string sUserID = "Hezz";
+            // Table name should always be selected
+            if (string.IsNullOrEmpty(sTableName))
+            {
+                MessageBox.Show("Please select a table to query from");
+                return;
+            }
 
+            // Decide whether or not there is a geometry field in the returned data.
+            // Select the stored procedure accordingly
+            string strCheck = "sp_geometry";
+            bool blSpatial = sColumnNames.ToLower().Contains(strCheck);
+            string strStoredProcedure = "AFHLSelectSppSubset"; // Default for non-spatial data.
+            string strPolyFC = "";
+            string strPointFC = "";
+            string strTable = sTableName + "_" + sUserID;
 
-            MessageBox.Show(myConfig.GetConnectionString());
+            if (blSpatial)
+            {
+                strStoredProcedure = "AFHLSelectSppSubsetSplit";
+                strPolyFC = sTableName + "_Poly_" + sUserID;
+                strPointFC = sTableName + "_Point_" + sUserID;
+                // If it is spatial data we are selected, make sure that a Group By clause is not used.
+                // Hopefully this can be resolved at a later date.
+                if (!string.IsNullOrEmpty(sGroupClause))
+                {
+                    MessageBox.Show("Spatial data cannot currently be selected using a Group By clause");
+                    return;
+                }
+            }
+
             SqlConnection dbConn = myADOFuncs.CreateSQLConnection(myConfig.GetConnectionString());
-            MessageBox.Show("Connection created");
-            SqlCommand myCommand = myADOFuncs.CreateSQLCommand(ref dbConn, "AFHLSelectSppSubset", CommandType.StoredProcedure); // Note pass connection by ref here.
-            MessageBox.Show("Command created");
+            SqlCommand myCommand = myADOFuncs.CreateSQLCommand(ref dbConn, strStoredProcedure, CommandType.StoredProcedure); // Note pass connection by ref here.
             myADOFuncs.AddSQLParameter(ref myCommand, "Schema", sDefaultSchema);
-            MessageBox.Show("First parameter added");
             myADOFuncs.AddSQLParameter(ref myCommand, "SpeciesTable", sTableName);
             myADOFuncs.AddSQLParameter(ref myCommand, "ColumnNames", sColumnNames);
             myADOFuncs.AddSQLParameter(ref myCommand, "WhereClause", sWhereClause);
@@ -146,9 +170,34 @@ namespace DataSelector
             myADOFuncs.AddSQLParameter(ref myCommand, "UserID", sUserID);
 
             dbConn.Open();
-            MessageBox.Show("Connection opened");
+
+            // Run the stored procedure.
             string strRowsAffect = myCommand.ExecuteNonQuery().ToString();
-            MessageBox.Show("procedure run");
+
+            // convert the results to the designated output file.
+
+
+
+            // Add the results to the screen.
+            IFeatureWorkspace theFWS = (IFeatureWorkspace)myArcSDEFuncs.OpenArcSDEConnection(myConfig.GetSDEName());
+            IApplication theApplication = (IApplication)ArcMap.Application;
+            ArcMapFunctions myArcMapFuncs = new ArcMapFunctions(theApplication);
+            if (blSpatial)
+            {
+                IFeatureClass thePolyFC = theFWS.OpenFeatureClass(strPolyFC);
+                IFeatureClass thePointFC = theFWS.OpenFeatureClass(strPointFC);
+                myArcMapFuncs.AddLayerFromFClass(thePolyFC);
+                myArcMapFuncs.AddLayerFromFClass(thePointFC);
+            }
+            else
+            {
+                ITable theTable = theFWS.OpenTable(strTable);
+                myArcMapFuncs.AddLayerFromTable(theTable, "Test");
+            }
+            
+
+ 
+            
         }
     }
 }

@@ -48,7 +48,7 @@
             this.btnOK = new System.Windows.Forms.Button();
             this.txtOutputFile = new System.Windows.Forms.TextBox();
             this.label3 = new System.Windows.Forms.Label();
-            this.button1 = new System.Windows.Forms.Button();
+            this.btnSaveAs = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
             // lblColumns
@@ -238,22 +238,21 @@
             this.label3.TabIndex = 19;
             this.label3.Text = "Output File:";
             // 
-            // button1
+            // btnSaveAs
             // 
-            this.button1.Location = new System.Drawing.Point(503, 201);
-            this.button1.Name = "button1";
-            this.button1.Size = new System.Drawing.Size(32, 23);
-            this.button1.TabIndex = 20;
-            this.button1.Text = "...";
-            this.button1.UseVisualStyleBackColor = true;
+            this.btnSaveAs.Image = global::DataSelector.Properties.Resources.Open_6529;
+            this.btnSaveAs.Location = new System.Drawing.Point(502, 202);
+            this.btnSaveAs.Name = "btnSaveAs";
+            this.btnSaveAs.Size = new System.Drawing.Size(33, 23);
+            this.btnSaveAs.TabIndex = 0;
+            this.btnSaveAs.Click += new System.EventHandler(this.btnSaveAs_Click);
             // 
             // frmDataSelector
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(547, 502);
-            this.Controls.Add(this.button1);
-            this.Controls.Add(this.label3);
+            this.Controls.Add(this.btnSaveAs);
             this.Controls.Add(this.txtOutputFile);
             this.Controls.Add(this.btnOK);
             this.Controls.Add(this.btnCancel);
@@ -273,6 +272,7 @@
             this.Controls.Add(this.lblWhere);
             this.Controls.Add(this.txtColumns);
             this.Controls.Add(this.lblColumns);
+            this.Controls.Add(this.label3);
             this.Name = "frmDataSelector";
             this.Text = "Data Selector";
             this.ResumeLayout(false);
@@ -302,6 +302,6 @@
         private System.Windows.Forms.Button btnOK;
         private System.Windows.Forms.TextBox txtOutputFile;
         private System.Windows.Forms.Label label3;
-        private System.Windows.Forms.Button button1;
+        private System.Windows.Forms.Button btnSaveAs;
     }
 }

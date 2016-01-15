@@ -11,10 +11,19 @@ using System.Windows.Forms;
 using HLSelectorToolConfig;
 using HLESRISQLServerFunctions;
 using HLArcMapModule;
+using HLFileFunctions;
 
 using ESRI.ArcGIS.Geodatabase;
+using ESRI.ArcGIS.GeoDatabaseUI;
 using ESRI.ArcGIS.esriSystem;
 using ESRI.ArcGIS.Framework;
+
+using ESRI.ArcGIS.Carto;
+using ESRI.ArcGIS.DataSourcesGDB;
+
+using ESRI.ArcGIS.ArcMapUI;
+using ESRI.ArcGIS.Geoprocessing;
+using ESRI.ArcGIS.Geoprocessor;
 
 // Unfortunately we also need ADO.Net in order to run the stored procedures with parameters...
 using System.Data.SqlClient;
@@ -27,6 +36,7 @@ namespace DataSelector
         SelectorToolConfig myConfig;
         ESRISQLServerFunctions myArcSDEFuncs;
         ADOSQLServerFunctions myADOFuncs;
+        FileFunctions myFileFuncs;
         public frmDataSelector()
         {
             InitializeComponent();
@@ -34,6 +44,7 @@ namespace DataSelector
             myConfig = new SelectorToolConfig(); // Should find the config file automatically.
             myArcSDEFuncs = new ESRISQLServerFunctions();
             myADOFuncs = new ADOSQLServerFunctions();
+            myFileFuncs = new FileFunctions();
             // fill the list box with SQL tables
             string strSDE = myConfig.GetSDEName();
             string strIncludeWildcard = myConfig.GetIncludeWildcard();
@@ -113,13 +124,17 @@ namespace DataSelector
 
         private void btnOK_Click(object sender, EventArgs e)
         {
+
+            this.Cursor = Cursors.WaitCursor;
             // Run the query. Everything else is allowed to be null.
-            string sDefaultSchema = myConfig.GetDatabaseSchema();  // "dbo";
-            string sTableName = lstTables.Text;  //"TVERC_Spp_Full";
-            string sColumnNames = txtColumns.Text; // "*";
-            string sWhereClause = txtWhere.Text; // "TaxonGroup = 'Birds'";
-            string sGroupClause = txtGroupBy.Text; // "";
-            string sOrderClause = txtOrderBy.Text; // "";
+            string sDefaultSchema = myConfig.GetDatabaseSchema();
+            string sTableName = lstTables.Text; 
+            string sColumnNames = txtColumns.Text; 
+            string sWhereClause = txtWhere.Text; 
+            string sGroupClause = txtGroupBy.Text; 
+            string sOrderClause = txtOrderBy.Text;
+            string sOutputFormat = cmbOutFormat.Text;
+            string sOutputFile = txtOutputFile.Text;
             string sUserID = Environment.UserName;
 
             // Do some basic checks and fix as required.
@@ -136,10 +151,20 @@ namespace DataSelector
                 return;
             }
 
+            if (string.IsNullOrEmpty(sOutputFile))
+            {
+                MessageBox.Show("Please specify an output file");
+                return;
+            }
+               
+
             // Decide whether or not there is a geometry field in the returned data.
             // Select the stored procedure accordingly
             string strCheck = "sp_geometry";
             bool blSpatial = sColumnNames.ToLower().Contains(strCheck);
+            // TO DO: IF "*" IS USED CHECK FOR THE EXISTENCE OF THE SPATIAL FIELD IN THE TABLE.
+            // IF IT EXISTS SET blSpatial TO TRUE.
+            bool blFlatTable = blSpatial; // to start with
             string strStoredProcedure = "AFHLSelectSppSubset"; // Default for non-spatial data.
             string strPolyFC = "";
             string strPointFC = "";
@@ -175,29 +200,138 @@ namespace DataSelector
             string strRowsAffect = myCommand.ExecuteNonQuery().ToString();
 
             // convert the results to the designated output file.
-
-
-
-            // Add the results to the screen.
-            IFeatureWorkspace theFWS = (IFeatureWorkspace)myArcSDEFuncs.OpenArcSDEConnection(myConfig.GetSDEName());
             IApplication theApplication = (IApplication)ArcMap.Application;
             ArcMapFunctions myArcMapFuncs = new ArcMapFunctions(theApplication);
-            if (blSpatial)
+
+            //string strtargetWorkspaceName =  myFileFuncs.GetDirectoryName(sOutputFile);
+            string strPointOutTab = myConfig.GetSDEName() + @"\" + sTableName + "_Point_" + sUserID;
+            string strPolyOutTab = myConfig.GetSDEName() + @"\" + sTableName + "_Poly_" + sUserID;
+            string strOutTab = myConfig.GetSDEName() + @"\" + sTableName + "_" + sUserID;
+
+            string strOutPoints = "";
+            string strOutPolys = "";
+
+            bool blResult = false;
+            if (blSpatial) 
             {
-                IFeatureClass thePolyFC = theFWS.OpenFeatureClass(strPolyFC);
-                IFeatureClass thePointFC = theFWS.OpenFeatureClass(strPointFC);
-                myArcMapFuncs.AddLayerFromFClass(thePolyFC);
-                myArcMapFuncs.AddLayerFromFClass(thePointFC);
+                // export points and polygons
+                // How is the data to be exported?
+                if (sOutputFormat == "Geodatabase") 
+                {
+                    // Easy, export without further ado.
+                    strOutPoints = sOutputFile + "_Point";
+                    strOutPolys = sOutputFile + "_Polys";
+                    MessageBox.Show("About to export points to " + strOutPoints);
+                    blResult = myArcMapFuncs.CopyFeatures(strPointOutTab, strOutPoints);
+                    if (!blResult)
+                    {
+                        MessageBox.Show("Error exporting point geodatabase file");
+                        return;
+                    }
+                    blResult = myArcMapFuncs.CopyFeatures(strPolyOutTab, strOutPolys);
+                    if (!blResult)
+                    {
+                        MessageBox.Show("Error exporting polygon geodatabase file");
+                        return;
+                    }
+                }
+                else if (sOutputFormat == "Shapefile")
+                {
+                    // Create file names first.
+                    sOutputFile = myFileFuncs.ReturnWithoutExtension(sOutputFile);
+                    strOutPoints = sOutputFile + "_Point.shp";
+                    strOutPolys = sOutputFile + "_Poly.shp";
+                    blResult = myArcMapFuncs.CopyFeatures(strPointOutTab, strOutPoints);
+                    if (!blResult)
+                    {
+                        MessageBox.Show("Error exporting point shapefile");
+                        return;
+                    }
+                    blResult = myArcMapFuncs.CopyFeatures(strPolyOutTab, strOutPolys);
+                    if (!blResult)
+                    {
+                        MessageBox.Show("Error exporting polygon shapefile");
+                        return;
+                    }
+                }
+                else
+                {
+                    // Not a spatial export, but it is a spatial layer so there are two files.
+                    blFlatTable = true;
+                    sOutputFile = myFileFuncs.ReturnWithoutExtension(sOutputFile);
+                    string strExtension = sOutputFile.Substring(sOutputFile.Length - 4, 4);
+                    strOutPoints = sOutputFile + "_Point" + strExtension;
+                    strOutPolys = sOutputFile + "_Poly" + strExtension;
+
+                    blResult = myArcMapFuncs.CopyTable(strPointOutTab, strOutPoints);
+                    if (!blResult)
+                    {
+                        MessageBox.Show("Error exporting output table");
+                        return;
+                    }
+                    blResult = myArcMapFuncs.CopyTable(strPolyOutTab, strOutPolys);
+                    if (!blResult)
+                    {
+                        MessageBox.Show("Error exporting output table");
+                        return;
+                    }
+                }
             }
             else
             {
-                ITable theTable = theFWS.OpenTable(strTable);
-                myArcMapFuncs.AddLayerFromTable(theTable, "Test");
+                // We are exporting a non-spatial output.
+                // TO BE DONE CHANGE .SHP TO .DBF
+                blResult = myArcMapFuncs.CopyTable(strOutTab, sOutputFile);
+                if (!blResult)
+                {
+                    MessageBox.Show("Error exporting output table");
+                    return;
+                }
             }
-            
+           
 
+            // Add the results to the screen.
+            
+            if (blSpatial && !blFlatTable)
+            {
+                myArcMapFuncs.AddFeatureLayerFromString(strOutPoints);
+                myArcMapFuncs.AddFeatureLayerFromString(strOutPolys);
+            }
+            else
+            {
+                //ITable theTable = theFWS.OpenTable(strTable);
+                //myArcMapFuncs.AddLayerFromTable(theTable, "Test");
+                myArcMapFuncs.AddTableLayerFromString(strOutTab);
+            }
+
+            this.Cursor = Cursors.Default;
+            MessageBox.Show("Process complete");
  
             
         }
+
+        private void btnSaveAs_Click(object sender, EventArgs e)
+        {
+            // Show SaveAs dialog.
+            SaveFileDialog saveFileDialog1 = new SaveFileDialog();
+
+            if (cmbOutFormat.Text == "Geodatabase") saveFileDialog1.Filter = "Geodatabase files|*.*";
+            if (cmbOutFormat.Text == "Shapefile") saveFileDialog1.Filter = "Shapefiles (*.shp)|*.shp";
+            if (cmbOutFormat.Text == "Text file") saveFileDialog1.Filter = "CSV files (*.csv)|*.csv|Text files (*.txt)|*.txt";
+
+            saveFileDialog1.InitialDirectory = myConfig.GetDefaultExtractPath();
+            saveFileDialog1.RestoreDirectory = true;
+
+            if (saveFileDialog1.ShowDialog() == DialogResult.OK)
+            {
+                // Put the Save As result into the text box.
+                txtOutputFile.Text = saveFileDialog1.FileName;
+            }
+        }
+
+        
+
+      
+
     }
 }

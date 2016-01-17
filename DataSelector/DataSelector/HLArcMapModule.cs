@@ -16,6 +16,9 @@ using ESRI.ArcGIS.esriSystem;
 using ESRI.ArcGIS.DataSourcesFile;
 using ESRI.ArcGIS.DataSourcesGDB;
 
+using ESRI.ArcGIS.Catalog;
+using ESRI.ArcGIS.CatalogUI;
+
 using HLFileFunctions;
 
 namespace HLArcMapModule
@@ -54,7 +57,6 @@ namespace HLArcMapModule
 
             return map;
         }
-
 
         public IWorkspaceFactory GetWorkspaceFactory(string aFilePath, bool Messages = false)
         {
@@ -263,21 +265,59 @@ namespace HLArcMapModule
             return true;
         }
 
+        public string GetOutputFileName(string aFileType, string anInitialDirectory = @"C:\")
+        {
+            // This would be done better with a custom type but this will do for the momment.
+            IGxDialog myDialog = new GxDialogClass();
+            myDialog.set_StartingLocation(anInitialDirectory);
+            IGxObjectFilter myFilter;
+
+
+            switch (aFileType)
+            {
+                case "Geodatabase FC":
+                    myFilter = new GxFilterFGDBFeatureClasses();
+                    break;
+                case "Geodatabase Table":
+                    myFilter = new GxFilterFGDBTables();
+                    break;
+                case "Shapefile":
+                    myFilter = new GxFilterShapefiles();
+                    break;
+                case "DBASE file":
+                    myFilter = new GxFilterdBASEFiles();
+                    break;
+                case "Text File":
+                    myFilter = new GxFilterTextFiles();
+                    break;
+                default:
+                    myFilter = new GxFilterDatasets();
+                    break;
+            }
+
+            myDialog.ObjectFilter = myFilter;
+            myDialog.Title = "Save Output As...";
+            myDialog.ButtonCaption = "OK";
+
+            if (myDialog.DoModalSave(thisApplication.hWnd))
+            {
+                return myDialog.Name;
+            }
+            else return "None"; // user pressed exit
+            
+        }
+
 
         #region CopyFeatures
         public bool CopyFeatures(string InFeatureClass, string OutFeatureClass, bool Messages = false)
         {
-            MessageBox.Show("About to create geoprocessor");
             ESRI.ArcGIS.Geoprocessor.Geoprocessor gp = new ESRI.ArcGIS.Geoprocessor.Geoprocessor();
             gp.OverwriteOutput = true;
-            MessageBox.Show("geoprocessor created");
             IGeoProcessorResult myresult = new GeoProcessorResultClass();
             object sev = null;
 
             // Create a variant array to hold the parameter values.
             IVariantArray parameters = new VarArrayClass();
-
-            MessageBox.Show(InFeatureClass);
 
             // Populate the variant array with parameter values.
             parameters.Add(InFeatureClass);
@@ -287,7 +327,6 @@ namespace HLArcMapModule
             try
             {
                 myresult = (IGeoProcessorResult)gp.Execute("CopyFeatures_management", parameters, null);
-                MessageBox.Show("Copy features executing");
                 // Wait until the execution completes.
                 while (myresult.Status == esriJobStatus.esriJobExecuting)
                     Thread.Sleep(1000);
@@ -296,13 +335,15 @@ namespace HLArcMapModule
                 {
                     MessageBox.Show("Process complete");
                 }
-                MessageBox.Show("Process complete");
                 return true;
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                MessageBox.Show(gp.GetMessages(ref sev));
+                if (Messages)
+                {
+                    MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show(gp.GetMessages(ref sev));
+                }
                 return false;
             }
         }

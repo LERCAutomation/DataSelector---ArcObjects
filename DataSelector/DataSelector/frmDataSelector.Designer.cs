@@ -46,9 +46,6 @@
             this.btnLoad = new System.Windows.Forms.Button();
             this.btnCancel = new System.Windows.Forms.Button();
             this.btnOK = new System.Windows.Forms.Button();
-            this.txtOutputFile = new System.Windows.Forms.TextBox();
-            this.label3 = new System.Windows.Forms.Label();
-            this.btnSaveAs = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
             // lblColumns
@@ -175,7 +172,7 @@
             this.chkSymbology.AutoSize = true;
             this.chkSymbology.Checked = true;
             this.chkSymbology.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.chkSymbology.Location = new System.Drawing.Point(329, 261);
+            this.chkSymbology.Location = new System.Drawing.Point(329, 188);
             this.chkSymbology.Name = "chkSymbology";
             this.chkSymbology.Size = new System.Drawing.Size(135, 17);
             this.chkSymbology.TabIndex = 13;
@@ -222,38 +219,11 @@
             this.btnOK.UseVisualStyleBackColor = true;
             this.btnOK.Click += new System.EventHandler(this.btnOK_Click);
             // 
-            // txtOutputFile
-            // 
-            this.txtOutputFile.Location = new System.Drawing.Point(329, 204);
-            this.txtOutputFile.Name = "txtOutputFile";
-            this.txtOutputFile.Size = new System.Drawing.Size(167, 20);
-            this.txtOutputFile.TabIndex = 18;
-            // 
-            // label3
-            // 
-            this.label3.AutoSize = true;
-            this.label3.Location = new System.Drawing.Point(326, 188);
-            this.label3.Name = "label3";
-            this.label3.Size = new System.Drawing.Size(61, 13);
-            this.label3.TabIndex = 19;
-            this.label3.Text = "Output File:";
-            // 
-            // btnSaveAs
-            // 
-            this.btnSaveAs.Image = global::DataSelector.Properties.Resources.Open_6529;
-            this.btnSaveAs.Location = new System.Drawing.Point(502, 202);
-            this.btnSaveAs.Name = "btnSaveAs";
-            this.btnSaveAs.Size = new System.Drawing.Size(33, 23);
-            this.btnSaveAs.TabIndex = 0;
-            this.btnSaveAs.Click += new System.EventHandler(this.btnSaveAs_Click);
-            // 
             // frmDataSelector
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(547, 502);
-            this.Controls.Add(this.btnSaveAs);
-            this.Controls.Add(this.txtOutputFile);
             this.Controls.Add(this.btnOK);
             this.Controls.Add(this.btnCancel);
             this.Controls.Add(this.btnLoad);
@@ -272,7 +242,6 @@
             this.Controls.Add(this.lblWhere);
             this.Controls.Add(this.txtColumns);
             this.Controls.Add(this.lblColumns);
-            this.Controls.Add(this.label3);
             this.Name = "frmDataSelector";
             this.Text = "Data Selector";
             this.ResumeLayout(false);
@@ -300,8 +269,5 @@
         private System.Windows.Forms.Button btnLoad;
         private System.Windows.Forms.Button btnCancel;
         private System.Windows.Forms.Button btnOK;
-        private System.Windows.Forms.TextBox txtOutputFile;
-        private System.Windows.Forms.Label label3;
-        private System.Windows.Forms.Button btnSaveAs;
     }
 }

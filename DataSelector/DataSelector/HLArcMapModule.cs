@@ -103,6 +103,34 @@ namespace HLArcMapModule
             return pFC;
         }
 
+
+        public bool FieldExists(string aFilePath, string aDatasetName, string aFieldName, bool Messages = false)
+        {
+            // This function returns true if a field (or a field alias) exists, false if it doesn (or the dataset doesn't)
+            IFeatureClass myFC = GetFeatureClass(aFilePath, aDatasetName);
+            ITable myTab;
+            if (myFC == null)
+            {
+                myTab = GetTable(aFilePath, aDatasetName);
+                if (myTab == null) return false; // Dataset doesn't exist.
+            }
+            else
+            {
+                myTab = (ITable)myFC;
+            }
+
+            int aTest;
+            IFields theFields = myTab.Fields;
+            aTest = theFields.FindField(aFieldName);
+            if (aTest == -1)
+            {
+                aTest = theFields.FindFieldByAliasName(aFieldName);
+            }
+
+            if (aTest == -1) return false;
+            return true;
+        }
+
         public bool AddLayerFromFClass(IFeatureClass theFeatureClass, bool Messages = false)
         {
             // Check we have input
@@ -301,7 +329,8 @@ namespace HLArcMapModule
 
             if (myDialog.DoModalSave(thisApplication.hWnd))
             {
-                return myDialog.Name;
+                string strOutFile = myDialog.FinalLocation.FullName + @"\" + myDialog.Name;
+                return strOutFile;
             }
             else return "None"; // user pressed exit
             

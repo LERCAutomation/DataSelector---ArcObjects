@@ -34,7 +34,7 @@ namespace HLESRISQLServerFunctions
             List<string> theStringList = new List<string>();
             IEnumDatasetName enumDatasetName = aWorkspace.get_DatasetNames(esriDatasetType.esriDTAny);
             IDatasetName datasetName = enumDatasetName.Next();
-            while (datasetName != null)
+            while (datasetName != null) 
             {
                 string strName = datasetName.Name;
                 // Does the name conform to the IncludeWildcard?
@@ -72,6 +72,7 @@ namespace HLESRISQLServerFunctions
         {
             SqlCommand myCmd = new SqlCommand(aName, aConnection);
             myCmd.CommandType = aCommandType;
+            myCmd.CommandTimeout = 1000; // TimeOut is 1000 seconds.
             return myCmd;
         }
 

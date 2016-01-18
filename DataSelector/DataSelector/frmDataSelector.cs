@@ -124,7 +124,7 @@ namespace DataSelector
 
         private void btnOK_Click(object sender, EventArgs e)
         {
-            // Let's get a save file first.
+
             IApplication theApplication = (IApplication)ArcMap.Application;
             ArcMapFunctions myArcMapFuncs = new ArcMapFunctions(theApplication);
             
@@ -140,7 +140,7 @@ namespace DataSelector
             string sOutputFormat = cmbOutFormat.Text;
             string sOutputFile;
             string sUserID = Environment.UserName;
-
+            
             // Do some basic checks and fix as required.
             // User ID should be something at least
             if (string.IsNullOrEmpty(sUserID))
@@ -155,30 +155,26 @@ namespace DataSelector
                 return;
             }
 
-            //if (string.IsNullOrEmpty(sOutputFile))
-            //{
-            //    MessageBox.Show("Please specify an output file");
-            //    return;
-            //}
-
             // Decide whether or not there is a geometry field in the returned data.
             // Select the stored procedure accordingly
             string strCheck = "sp_geometry";
             bool blSpatial = sColumnNames.ToLower().Contains(strCheck);
-            // TO DO: IF "*" IS USED CHECK FOR THE EXISTENCE OF THE SPATIAL FIELD IN THE TABLE.
-            // IF IT EXISTS SET blSpatial TO TRUE.
+            // If "*" is used check for the existence of a SP_GEOMETRY in the table.
+            if (sColumnNames == "*")
+            {
+                blSpatial = myArcMapFuncs.FieldExists(myConfig.GetSDEName(), sTableName, "SP_GEOMETRY");
+            }
+            
+            // Set the temporary table names and the stored procedure names. Adjust output formats if required.
             bool blFlatTable = !blSpatial; // to start with
             string strStoredProcedure = "AFHLSelectSppSubset"; // Default for non-spatial data.
-            string strPolyFC = "";
-            string strPointFC = "";
+            string strPolyFC = sTableName + "_Poly_" + sUserID; ;
+            string strPointFC = sTableName + "_Point_" + sUserID;
             string strTable = sTableName + "_" + sUserID;
 
             if (blSpatial)
             {
                 strStoredProcedure = "AFHLSelectSppSubsetSplit";
-                strPolyFC = sTableName + "_Poly_" + sUserID;
-                strPointFC = sTableName + "_Point_" + sUserID;
-
                 if (sOutputFormat == "Geodatabase") sOutputFormat = "Geodatabase FC";
             }
             else
@@ -187,10 +183,11 @@ namespace DataSelector
                 if (sOutputFormat == "Shapefile") sOutputFormat = "DBASE file";
             }
 
-            // Get the output file name.
+            // Get the output file name taking account of adjusted output formats.
             sOutputFile = myArcMapFuncs.GetOutputFileName(sOutputFormat, myConfig.GetDefaultExtractPath());
             if (sOutputFile == "None")
             {
+                // User has pressed Cancel. Bring original menu to the front.
                 MessageBox.Show("Please select an output file");
                 this.Cursor = Cursors.Default;
                 this.Show();
@@ -198,6 +195,7 @@ namespace DataSelector
             }
 
             // Now we are all set to go - do the process.
+            // Set up all required parameters.
             SqlConnection dbConn = myADOFuncs.CreateSQLConnection(myConfig.GetConnectionString());
             SqlCommand myCommand = myADOFuncs.CreateSQLCommand(ref dbConn, strStoredProcedure, CommandType.StoredProcedure); // Note pass connection by ref here.
             myADOFuncs.AddSQLParameter(ref myCommand, "Schema", sDefaultSchema);
@@ -208,10 +206,23 @@ namespace DataSelector
             myADOFuncs.AddSQLParameter(ref myCommand, "OrderByClause", sOrderClause);
             myADOFuncs.AddSQLParameter(ref myCommand, "UserID", sUserID);
 
+            // Open ADO connection to database
             dbConn.Open();
 
             // Run the stored procedure.
-            string strRowsAffect = myCommand.ExecuteNonQuery().ToString();
+            try
+            {
+                string strRowsAffect = myCommand.ExecuteNonQuery().ToString();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Could not execute stored procedure. System returned the following message: " +
+                    ex.Message);
+                this.Cursor = Cursors.Default;
+                this.Show();
+                return;
+            }
+
 
             // convert the results to the designated output file.
             //string strtargetWorkspaceName =  myFileFuncs.GetDirectoryName(sOutputFile);
@@ -252,6 +263,7 @@ namespace DataSelector
                     sOutputFile = myFileFuncs.ReturnWithoutExtension(sOutputFile);
                     strOutPoints = sOutputFile + "_Point.shp";
                     strOutPolys = sOutputFile + "_Poly.shp";
+                    MessageBox.Show(strOutPoints);
                     blResult = myArcMapFuncs.CopyFeatures(strPointOutTab, strOutPoints);
                     if (!blResult)
                     {

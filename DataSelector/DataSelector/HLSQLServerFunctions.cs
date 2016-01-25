@@ -85,5 +85,20 @@ namespace HLESRISQLServerFunctions
             return true;
         }
 
+        public bool AddSQLParameter(ref SqlCommand aCommand, string aName, int aValue)
+        {
+            SqlParameter myParameter = aCommand.Parameters.Add(aName, System.Data.SqlDbType.BigInt);
+            myParameter.Value = aValue;
+            return true;
+        }
+
+        public bool AddSQLParameter(ref SqlCommand aCommand, string aName, bool aValue)
+        {
+            SqlParameter myParameter = aCommand.Parameters.Add(aName, System.Data.SqlDbType.Bit);
+            myParameter.Value = 0;
+            if (aValue) myParameter.Value = 1;
+            return true;
+        }
+
     }
 }

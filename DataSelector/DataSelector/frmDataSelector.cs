@@ -167,14 +167,15 @@ namespace DataSelector
             
             // Set the temporary table names and the stored procedure names. Adjust output formats if required.
             bool blFlatTable = !blSpatial; // to start with
-            string strStoredProcedure = "AFHLSelectSppSubset"; // Default for non-spatial data.
-            string strPolyFC = sTableName + "_Poly_" + sUserID; ;
-            string strPointFC = sTableName + "_Point_" + sUserID;
+            string strStoredProcedure = "AFSelectSppSubset"; // Default for all data
+            string strPolyFC = sTableName + "_poly_" + sUserID; ;
+            string strPointFC = sTableName + "_point_" + sUserID;
             string strTable = sTableName + "_" + sUserID;
+            string strSplit = "0";
 
             if (blSpatial)
             {
-                strStoredProcedure = "AFHLSelectSppSubsetSplit";
+                strSplit = "1";
                 if (sOutputFormat == "Geodatabase") sOutputFormat = "Geodatabase FC";
             }
             else
@@ -185,6 +186,7 @@ namespace DataSelector
 
             // Get the output file name taking account of adjusted output formats.
             sOutputFile = myArcMapFuncs.GetOutputFileName(sOutputFormat, myConfig.GetDefaultExtractPath());
+            
             if (sOutputFile == "None")
             {
                 // User has pressed Cancel. Bring original menu to the front.
@@ -192,6 +194,13 @@ namespace DataSelector
                 this.Cursor = Cursors.Default;
                 this.Show();
                 return;
+            }
+
+            string strLayerName = myFileFuncs.GetFileName(sOutputFile);
+            
+            if (sOutputFormat != "Geodatabase")
+            {
+            strLayerName = myFileFuncs.ReturnWithoutExtension(strLayerName);
             }
 
             // Now we are all set to go - do the process.
@@ -205,7 +214,8 @@ namespace DataSelector
             myADOFuncs.AddSQLParameter(ref myCommand, "GroupByClause", sGroupClause);
             myADOFuncs.AddSQLParameter(ref myCommand, "OrderByClause", sOrderClause);
             myADOFuncs.AddSQLParameter(ref myCommand, "UserID", sUserID);
-
+            myADOFuncs.AddSQLParameter(ref myCommand, "Split", strSplit); // Calls overloaded method that takes int.
+            
             // Open ADO connection to database
             dbConn.Open();
 
@@ -223,22 +233,24 @@ namespace DataSelector
                 return;
             }
 
-
             // convert the results to the designated output file.
-            //string strtargetWorkspaceName =  myFileFuncs.GetDirectoryName(sOutputFile);
-            string strPointOutTab = myConfig.GetSDEName() + @"\" + sTableName + "_Point_" + sUserID;
-            string strPolyOutTab = myConfig.GetSDEName() + @"\" + sTableName + "_Poly_" + sUserID;
-            string strOutTab = myConfig.GetSDEName() + @"\" + sTableName + "_" + sUserID;
+            string strPointOutTab = myConfig.GetSDEName() + @"\" + strPointFC; //sTableName + "_Point_" + sUserID;
+            string strPolyOutTab = myConfig.GetSDEName() + @"\" + strPolyFC; // sTableName + "_Poly_" + sUserID;
+            string strOutTab = myConfig.GetSDEName() + @"\" + strTable; // sTableName + "_" + sUserID;
 
             string strOutPoints = "";
             string strOutPolys = "";
+
+            MessageBox.Show(blSpatial.ToString());
 
             bool blResult = false;
             if (blSpatial) 
             {
                 // export points and polygons
                 // How is the data to be exported?
-                if (sOutputFormat == "Geodatabase") 
+                MessageBox.Show(sOutputFormat);
+                MessageBox.Show(sOutputFile);
+                if (sOutputFormat == "Geodatabase FC") 
                 {
                     // Easy, export without further ado.
                     strOutPoints = sOutputFile + "_Point";
@@ -286,13 +298,14 @@ namespace DataSelector
                     strOutPoints = sOutputFile + "_Point" + strExtension;
                     strOutPolys = sOutputFile + "_Poly" + strExtension;
 
-                    blResult = myArcMapFuncs.CopyTable(strPointOutTab, strOutPoints);
+                    blResult = myArcMapFuncs.CopyTable(strPointOutTab, sOutputFile);
                     if (!blResult)
                     {
                         MessageBox.Show("Error exporting output table");
                         return;
                     }
-                    blResult = myArcMapFuncs.CopyTable(strPolyOutTab, strOutPolys);
+                    // Append to this table - so putting the results back together.
+                    blResult = myArcMapFuncs.AppendTable(strPolyOutTab, sOutputFile);
                     if (!blResult)
                     {
                         MessageBox.Show("Error exporting output table");
@@ -316,14 +329,22 @@ namespace DataSelector
             
             if (blSpatial && !blFlatTable)
             {
-                myArcMapFuncs.AddFeatureLayerFromString(strOutPoints);
-                myArcMapFuncs.AddFeatureLayerFromString(strOutPolys);
+                ILayer lyrPolys = myArcMapFuncs.GetLayer(strLayerName + "_Polys");
+                ILayer lyrPoints = myArcMapFuncs.GetLayer(strLayerName + "_Points");
+                myArcMapFuncs.MoveToGroupLayer(strLayerName, lyrPolys);
+                myArcMapFuncs.MoveToGroupLayer(strLayerName, lyrPoints);
+            }
+            else if (blSpatial)
+            {
+                // Only one output remains
+                myArcMapFuncs.AddTableLayerFromString(sOutputFile);
+                // Open table view.
+                myArcMapFuncs.ShowTable(strLayerName);
             }
             else
             {
-                //ITable theTable = theFWS.OpenTable(strTable);
-                //myArcMapFuncs.AddLayerFromTable(theTable, "Test");
                 myArcMapFuncs.AddTableLayerFromString(strOutTab);
+                // Open table view.
             }
 
             this.Cursor = Cursors.Default;
@@ -331,11 +352,19 @@ namespace DataSelector
     
         }
 
-        
+        private void button1_Click(object sender, EventArgs e)
+        {
+            IApplication theApplication = (IApplication)ArcMap.Application;
+            bool aTest = false;
+            ArcMapFunctions myFuncs = new ArcMapFunctions(theApplication);
+            aTest = myFuncs.GroupLayerExists("myTest");
+            MessageBox.Show(aTest.ToString());
+            ILayer myLayer = myFuncs.GetLayer("HesTest");
+            myFuncs.MoveToGroupLayer("myTest", myLayer);
+            myFuncs.ShowTable("HesTab", true);
+            
+        }
 
-        
-
-      
 
     }
 }

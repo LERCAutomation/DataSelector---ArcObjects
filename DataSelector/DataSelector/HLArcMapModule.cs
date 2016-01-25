@@ -10,6 +10,7 @@ using ESRI.ArcGIS.Desktop.AddIns;
 using ESRI.ArcGIS.Framework;
 using ESRI.ArcGIS.Carto;
 using ESRI.ArcGIS.Geodatabase;
+using ESRI.ArcGIS.GeoDatabaseUI;
 
 using ESRI.ArcGIS.Geoprocessing;
 using ESRI.ArcGIS.esriSystem;
@@ -103,6 +104,89 @@ namespace HLArcMapModule
             return pFC;
         }
 
+        public IFeatureLayer GetFeatureLayerFromString(string aFeatureClassName, bool Messages = false)
+        {
+            // firstly get the Feature Class
+            // Does it exist?
+            if (!myFileFuncs.FileExists(aFeatureClassName))
+            {
+                if (Messages)
+                {
+                    MessageBox.Show("The featureclass " + aFeatureClassName + " does not exist");
+                }
+                return null;
+            }
+            string aFilePath = myFileFuncs.GetDirectoryName(aFeatureClassName);
+            string aFCName = myFileFuncs.GetFileName(aFeatureClassName);
+
+            IFeatureClass myFC = GetFeatureClass(aFilePath, aFCName);
+            if (myFC == null)
+            {
+                if (Messages)
+                {
+                    MessageBox.Show("Cannot open featureclass " + aFeatureClassName);
+                }
+                return null;
+            }
+
+            // Now get the Feature Layer from this.
+            FeatureLayer pFL = new FeatureLayer();
+            pFL.FeatureClass = myFC;
+            pFL.Name = myFC.AliasName;
+            return pFL;
+        }
+
+        public ILayer GetLayer(string aName, bool Messages = false)
+        {
+            // Gets existing layer in map.
+            // Check there is input.
+           if (aName == null)
+           {
+               if (Messages)
+               {
+                   MessageBox.Show("Please pass a valid layer name", "Find Layer By Name");
+               }
+               return null;
+            }
+        
+            // Get map, and layer names.
+            IMap pMap = GetMap();
+            if (pMap == null)
+            {
+                if (Messages)
+                {
+                    MessageBox.Show("No map found", "Find Layer By Name");
+                }
+                return null;
+            }
+            IEnumLayer pLayers = pMap.Layers;
+            Boolean blFoundit = false;
+            ILayer pTargetLayer = null;
+
+            ILayer pLayer = pLayers.Next();
+
+            // Look through the layers and carry on until found,
+            // or we have reached the end of the list.
+            while ((pLayer != null) && !blFoundit)
+            {
+                if (!(pLayer is ICompositeLayer))
+                {
+                    if (pLayer.Name == aName)
+                    {
+                        pTargetLayer = pLayer;
+                        blFoundit = true;
+                    }
+                }
+                pLayer = pLayers.Next();
+            }
+
+            if (pTargetLayer == null)
+            {
+                if (Messages) MessageBox.Show("The layer " + aName + " doesn't exist", "Find Layer");
+                return null;
+            }
+            return pTargetLayer;
+        }
 
         public bool FieldExists(string aFilePath, string aDatasetName, string aFieldName, bool Messages = false)
         {
@@ -201,6 +285,7 @@ namespace HLArcMapModule
 
         }
 
+        #region GetTable
         public ITable GetTable(string aFilePath, string aDatasetName, bool Messages = false)
         {
             // Check input first.
@@ -220,6 +305,29 @@ namespace HLArcMapModule
             }
             return pTable;
         }
+
+        public ITable GetTable(string aTableLayer, bool Messages = false)
+        {
+            IMap pMap = GetMap();
+            IStandaloneTableCollection pColl = (IStandaloneTableCollection)pMap;
+            IStandaloneTable pThisTable = null;
+
+            for (int I = 0; I < pColl.StandaloneTableCount; I++)
+            {
+                pThisTable = pColl.StandaloneTable[I];
+                if (pThisTable.Name == aTableLayer)
+                {
+                    ITable myTable = pThisTable.Table;
+                    return myTable;
+                }
+            }
+            if (Messages)
+            {
+                MessageBox.Show("The table layer " + aTableLayer + " could not be found in this map");
+            }
+            return null;
+        }
+        #endregion
 
         public bool AddTableLayerFromString(string aTableName, bool Messages = false)
         {
@@ -293,6 +401,205 @@ namespace HLArcMapModule
             return true;
         }
 
+        public bool LayerExists(string aLayerName, bool Messages = false)
+        {
+            // Check there is input.
+            if (aLayerName == null)
+            {
+                if (Messages) MessageBox.Show("Please pass a valid layer name", "Find Layer By Name");
+                return false;
+            }
+
+            // Get map, and layer names.
+            IMap pMap = GetMap();
+            if (pMap == null)
+            {
+                if (Messages) MessageBox.Show("No map found", "Find Layer By Name");
+                return false;
+            }
+            IEnumLayer pLayers = pMap.Layers;
+
+            ILayer pLayer = pLayers.Next();
+
+            // Look through the layers and carry on until found,
+            // or we have reached the end of the list.
+            while (pLayer != null)
+            {
+                if (!(pLayer is IGroupLayer))
+                {
+                    if (pLayer.Name == aLayerName)
+                    {
+                        return true;
+                    }
+
+                }
+                pLayer = pLayers.Next();
+            }
+            return false;
+        }
+
+        public bool GroupLayerExists(string aGroupLayerName, bool Messages = false)
+        {
+            // Check there is input.
+            if (aGroupLayerName == null)
+            {
+                if (Messages) MessageBox.Show("Please pass a valid layer name", "Find Layer By Name");
+                return false;
+            }
+
+            // Get map, and layer names.
+            IMap pMap = GetMap();
+            if (pMap == null)
+            {
+                if (Messages) MessageBox.Show("No map found", "Find Layer By Name");
+                return false;
+            }
+            IEnumLayer pLayers = pMap.Layers;
+
+            ILayer pLayer = pLayers.Next();
+
+            // Look through the layers and carry on until found,
+            // or we have reached the end of the list.
+            while (pLayer != null)
+            {
+                if (pLayer is IGroupLayer)
+                {
+                    if (pLayer.Name == aGroupLayerName)
+                    {
+                        return true;
+                    }
+
+                }
+                pLayer = pLayers.Next();
+            }
+            return false;
+        }
+
+        public ILayer GetGroupLayer(string aGroupLayerName, bool Messages = false)
+        {
+            // Check there is input.
+            if (aGroupLayerName == null)
+            {
+                if (Messages) MessageBox.Show("Please pass a valid layer name", "Find Layer By Name");
+                return null;
+            }
+
+            // Get map, and layer names.
+            IMap pMap = GetMap();
+            if (pMap == null)
+            {
+                if (Messages) MessageBox.Show("No map found", "Find Layer By Name");
+                return null;
+            }
+            IEnumLayer pLayers = pMap.Layers;
+
+            ILayer pLayer = pLayers.Next();
+
+            // Look through the layers and carry on until found,
+            // or we have reached the end of the list.
+            while (pLayer != null)
+            {
+                if (pLayer is IGroupLayer)
+                {
+                    if (pLayer.Name == aGroupLayerName)
+                    {
+                        return pLayer;
+                    }
+
+                }
+                pLayer = pLayers.Next();
+            }
+            return null;
+        }      
+        
+        public bool MoveToGroupLayer(string theGroupLayerName, ILayer aLayer,  bool Messages = false)
+        {
+            bool blExists = false;
+            IGroupLayer myGroupLayer = new GroupLayer(); 
+            // Does the group layer exist?
+            if (GroupLayerExists(theGroupLayerName))
+            {
+                GetGroupLayer(theGroupLayerName);
+                blExists = true;
+            }
+            else
+            {
+                myGroupLayer.Name = theGroupLayerName;
+            }
+            string theOldName = aLayer.Name;
+
+            // Remove the original instance, then add it to the group.
+            RemoveLayer(aLayer);
+            myGroupLayer.Add(aLayer);
+            
+            if (!blExists)
+            {
+                // Add the layer to the map.
+                IMap pMap = GetMap();
+                pMap.AddLayer(myGroupLayer);
+            }
+
+            return true;
+        }
+
+        public bool RemoveLayer(string aLayerName, bool Messages = false)
+        {
+            // Check there is input.
+            if (aLayerName == null)
+            {
+                MessageBox.Show("Please pass a valid layer name", "Find Layer By Name");
+                return false;
+            }
+
+            // Get map, and layer names.
+            IMap pMap = GetMap();
+            if (pMap == null)
+            {
+                if (Messages) MessageBox.Show("No map found", "Find Layer By Name");
+                return false;
+            }
+            IEnumLayer pLayers = pMap.Layers;
+
+            ILayer pLayer = pLayers.Next();
+
+            // Look through the layers and carry on until found,
+            // or we have reached the end of the list.
+            while (pLayer != null)
+            {
+                if (!(pLayer is IGroupLayer))
+                {
+                    if (pLayer.Name == aLayerName)
+                    {
+                        pMap.DeleteLayer(pLayer);
+                        return true;
+                    }
+
+                }
+                pLayer = pLayers.Next();
+            }
+            return false;
+        }
+
+        public bool RemoveLayer(ILayer aLayer, bool Messages = false)
+        {
+            // Check there is input.
+            if (aLayer == null)
+            {
+                MessageBox.Show("Please pass a valid layer ", "Remove Layer");
+                return false;
+            }
+
+            // Get map, and layer names.
+            IMap pMap = GetMap();
+            if (pMap == null)
+            {
+                if (Messages) MessageBox.Show("No map found", "Find Layer By Name");
+                return false;
+            }
+            pMap.DeleteLayer(aLayer);
+            return true;
+        }
+
         public string GetOutputFileName(string aFileType, string anInitialDirectory = @"C:\")
         {
             // This would be done better with a custom type but this will do for the momment.
@@ -335,7 +642,6 @@ namespace HLArcMapModule
             else return "None"; // user pressed exit
             
         }
-
 
         #region CopyFeatures
         public bool CopyFeatures(string InFeatureClass, string OutFeatureClass, bool Messages = false)
@@ -426,6 +732,66 @@ namespace HLArcMapModule
                 MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return false;
             }
+        }
+
+        public bool AppendTable(string InTable, string TargetTable, bool Messages = false)
+        {
+            ESRI.ArcGIS.Geoprocessor.Geoprocessor gp = new ESRI.ArcGIS.Geoprocessor.Geoprocessor();
+            gp.OverwriteOutput = true;
+
+            IGeoProcessorResult myresult = new GeoProcessorResultClass();
+
+            // Create a variant array to hold the parameter values.
+            IVariantArray parameters = new VarArrayClass();
+
+
+            // Populate the variant array with parameter values.
+            parameters.Add(InTable);
+            parameters.Add(TargetTable);
+
+            // Execute the tool.
+            try
+            {
+                myresult = (IGeoProcessorResult)gp.Execute("Append_management", parameters, null);
+
+                // Wait until the execution completes.
+                while (myresult.Status == esriJobStatus.esriJobExecuting)
+                    Thread.Sleep(1000);
+                // Wait for 1 second.
+                if (Messages)
+                {
+                    MessageBox.Show("Process complete");
+                }
+                return true;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return false;
+            }
+        }
+
+        public void ShowTable(string aTableName, bool Messages = false)
+        {
+            if (aTableName == null)
+            {
+                if (Messages) MessageBox.Show("Please pass a table name", "Show Table");
+                return;
+            }
+
+            ITable myTable = GetTable(aTableName);
+            if (myTable == null)
+            {
+                if (Messages)
+                {
+                    MessageBox.Show("Table " + aTableName + " not found in map");
+                    return;
+                }
+            }
+            ITableWindow myWin = new TableWindow();
+            myWin.Table = myTable;
+            myWin.Application = thisApplication;
+            myWin.Show(true);
         }
     }
 }

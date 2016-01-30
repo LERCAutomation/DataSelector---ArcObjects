@@ -128,7 +128,6 @@ namespace DataSelector
             IApplication theApplication = (IApplication)ArcMap.Application;
             ArcMapFunctions myArcMapFuncs = new ArcMapFunctions(theApplication);
             
-
             this.Cursor = Cursors.WaitCursor;
             // Run the query. Everything else is allowed to be null.
             string sDefaultSchema = myConfig.GetDatabaseSchema();
@@ -160,7 +159,7 @@ namespace DataSelector
             string strCheck = "sp_geometry";
             bool blSpatial = sColumnNames.ToLower().Contains(strCheck);
             // If "*" is used check for the existence of a SP_GEOMETRY in the table.
-            if (sColumnNames == "*")
+            if (sColumnNames == "*") // Untested; likely to fail.
             {
                 blSpatial = myArcMapFuncs.FieldExists(myConfig.GetSDEName(), sTableName, "SP_GEOMETRY");
             }
@@ -289,28 +288,26 @@ namespace DataSelector
                         return;
                     }
                 }
-                else
+                else if (sOutputFormat == "Text file")
                 {
                     // Not a spatial export, but it is a spatial layer so there are two files.
+                    // Function pulls them back together again.
                     blFlatTable = true;
-                    sOutputFile = myFileFuncs.ReturnWithoutExtension(sOutputFile);
-                    string strExtension = sOutputFile.Substring(sOutputFile.Length - 4, 4);
-                    strOutPoints = sOutputFile + "_Point" + strExtension;
-                    strOutPolys = sOutputFile + "_Poly" + strExtension;
+                    //string strExtension = sOutputFile.Substring(sOutputFile.Length - 4, 4);
+                    
+                    blResult = myArcMapFuncs.CopyToCSV(strPointOutTab, sOutputFile, true, false, true);
+                    if (!blResult)
+                    {
+                        MessageBox.Show("Error exporting output table");
+                        return;
+                    }
+                    // Also export the second table - append
+                    blResult = myArcMapFuncs.CopyToCSV(strPolyOutTab, sOutputFile, true, true, true);
 
-                    blResult = myArcMapFuncs.CopyTable(strPointOutTab, sOutputFile);
-                    if (!blResult)
-                    {
-                        MessageBox.Show("Error exporting output table");
-                        return;
-                    }
-                    // Append to this table - so putting the results back together.
-                    blResult = myArcMapFuncs.AppendTable(strPolyOutTab, sOutputFile);
-                    if (!blResult)
-                    {
-                        MessageBox.Show("Error exporting output table");
-                        return;
-                    }
+                }
+                else
+                {
+                    // it is a dbf output of a spatial selection. To write.
                 }
             }
             else
@@ -345,6 +342,7 @@ namespace DataSelector
             {
                 myArcMapFuncs.AddTableLayerFromString(strOutTab);
                 // Open table view.
+                myArcMapFuncs.ShowTable(strLayerName);
             }
 
             this.Cursor = Cursors.Default;

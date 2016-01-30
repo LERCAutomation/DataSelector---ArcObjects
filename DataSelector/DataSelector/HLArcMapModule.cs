@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.IO;
 using System.Windows.Forms;
 using System.Threading;
 
@@ -16,6 +17,7 @@ using ESRI.ArcGIS.Geoprocessing;
 using ESRI.ArcGIS.esriSystem;
 using ESRI.ArcGIS.DataSourcesFile;
 using ESRI.ArcGIS.DataSourcesGDB;
+using ESRI.ArcGIS.DataSourcesOleDB;
 
 using ESRI.ArcGIS.Catalog;
 using ESRI.ArcGIS.CatalogUI;
@@ -59,7 +61,7 @@ namespace HLArcMapModule
             return map;
         }
 
-        public IWorkspaceFactory GetWorkspaceFactory(string aFilePath, bool Messages = false)
+        public IWorkspaceFactory GetWorkspaceFactory(string aFilePath, bool aTextFile = false, bool Messages = false)
         {
             // This function decides what type of feature workspace factory would be best for this file.
             // it is up to the user to decide whether the file path and file names exist (or should exist).
@@ -76,11 +78,31 @@ namespace HLArcMapModule
                 // Personal geodatabase.
                 pWSF = new AccessWorkspaceFactory();
             }
+            else if (aFilePath.Substring(aFilePath.Length - 4, 4) == ".sde")
+            {
+                // ArcSDE connection
+                pWSF = new SdeWorkspaceFactory();
+            }
+            else if (aTextFile == true)
+            {
+                // Text file
+                pWSF = new TextFileWorkspaceFactory();
+            }
             else
             {
                 pWSF = new ShapefileWorkspaceFactory();
             }
             return pWSF;
+        }
+
+        public IFeatureClass GetSDEFeatureClass(string anSDEConnection, string aFeatureClass, bool Messages = false)
+        {
+            Type factoryType = Type.GetTypeFromProgID("esriDataSourcesGDB.SdeWorkspaceFactory");
+            IWorkspaceFactory workspaceFactory = (IWorkspaceFactory)Activator.CreateInstance(factoryType);
+            IWorkspace theWS = workspaceFactory.OpenFromFile(anSDEConnection, 0);
+            IFeatureWorkspace theFWS = (IFeatureWorkspace)theWS;
+            IFeatureClass theFC = theFWS.OpenFeatureClass(aFeatureClass);
+            return theFC;
         }
 
         public IFeatureClass GetFeatureClass(string aFilePath, string aDatasetName, bool Messages = false)
@@ -294,8 +316,14 @@ namespace HLArcMapModule
                 if (Messages) MessageBox.Show("Please provide valid input", "Open Feature Class from Disk");
                 return null;
             }
+            bool blText = false;
+            string strExt = aDatasetName.Substring(aDatasetName.Length - 4, 4);
+            if (strExt == ".txt" || strExt == ".csv" || strExt == ".tab")
+            {
+                blText = true;
+            }
 
-            IWorkspaceFactory pWSF = GetWorkspaceFactory(aFilePath);
+            IWorkspaceFactory pWSF = GetWorkspaceFactory(aFilePath, blText);
             IFeatureWorkspace pWS = (IFeatureWorkspace)pWSF.OpenFromFile(aFilePath, 0);
             ITable pTable = pWS.OpenTable(aDatasetName);
             if (pTable == null)
@@ -331,8 +359,8 @@ namespace HLArcMapModule
 
         public bool AddTableLayerFromString(string aTableName, bool Messages = false)
         {
-            // firstly get the Feature Class
-            // Does it exist?
+            // firstly get the Table
+            // Does it exist? // Does not work for GeoDB tables!!
             if (!myFileFuncs.FileExists(aTableName))
             {
                 if (Messages)
@@ -622,7 +650,7 @@ namespace HLArcMapModule
                 case "DBASE file":
                     myFilter = new GxFilterdBASEFiles();
                     break;
-                case "Text File":
+                case "Text file":
                     myFilter = new GxFilterTextFiles();
                     break;
                 default:
@@ -699,6 +727,7 @@ namespace HLArcMapModule
 
         public bool CopyTable(string InTable, string OutTable, bool Messages = false)
         {
+            // This works absolutely fine for dbf and geodatabase but does not export to CSV.
             ESRI.ArcGIS.Geoprocessor.Geoprocessor gp = new ESRI.ArcGIS.Geoprocessor.Geoprocessor();
             gp.OverwriteOutput = true;
 
@@ -749,7 +778,7 @@ namespace HLArcMapModule
             parameters.Add(InTable);
             parameters.Add(TargetTable);
 
-            // Execute the tool.
+            // Execute the tool. Note this only works with geodatabase tables.
             try
             {
                 myresult = (IGeoProcessorResult)gp.Execute("Append_management", parameters, null);
@@ -771,6 +800,82 @@ namespace HLArcMapModule
             }
         }
 
+        public bool CopyToCSV(string InTable, string OutTable, bool Spatial, bool Append, bool Messages = false)
+        {
+            // This sub copies the input table to CSV.
+
+            // Open the input table
+
+            // Check it exists (with ESRI function)
+
+
+            string aFilePath = myFileFuncs.GetDirectoryName(InTable);
+            string aTabName = myFileFuncs.GetFileName(InTable);
+
+            ICursor myCurs = null;
+            IFields fldsFields = null;
+            if (Spatial)
+            {
+                MessageBox.Show(aFilePath + ", " + aTabName);
+                IFeatureClass myFC = GetSDEFeatureClass(aFilePath, aTabName, true);
+                myCurs = (ICursor)myFC.Search(null, false);
+                fldsFields = myFC.Fields;
+            }
+            else
+            {
+                ITable myTable = GetTable(aFilePath, aTabName, true);
+                myCurs = myTable.Search(null, false);
+                fldsFields = myTable.Fields;
+            }
+
+            if (myCurs == null)
+            {
+                if (Messages)
+                {
+                    MessageBox.Show("Cannot open table " + InTable);
+                }
+                return false;
+            }
+
+            // Open output file.
+            StreamWriter theOutput = new StreamWriter(OutTable, Append);
+
+            string strField = null;
+            string strHeader = "";
+            int intFieldCount = fldsFields.FieldCount;
+
+            if (!Append)
+            {
+                // iterate through the fields in the collection to create header.
+                for (int i = 0; i < intFieldCount; i++)
+                {
+                    // Get the field at the given index.
+                    strField = fldsFields.get_Field(i).Name;
+                    strHeader = strHeader + strField;
+                    if (i < intFieldCount - 1) strHeader = strHeader + ","; // Only add comma up to second to last one.
+                }
+                // Write the header.
+                theOutput.WriteLine(strHeader);
+            }
+            // Now write the file.
+            IRow aRow = myCurs.NextRow();
+            while (aRow != null)
+            {
+                string strRow = "";
+                for (int i = 0; i < intFieldCount; i++)
+                {
+                    var theValue = aRow.get_Value(i);
+                    strRow = strRow + theValue.ToString();
+                    if (i < intFieldCount - 1) strRow = strRow + ",";
+                }
+                theOutput.WriteLine(strRow);
+                aRow = myCurs.NextRow();
+            }
+
+            theOutput.Close();
+            return true;
+        }
+
         public void ShowTable(string aTableName, bool Messages = false)
         {
             if (aTableName == null)
@@ -788,8 +893,11 @@ namespace HLArcMapModule
                     return;
                 }
             }
-            ITableWindow myWin = new TableWindow();
-            myWin.Table = myTable;
+
+            ITableWindow2 myWin = (ITableWindow2)new TableWindow();
+            //myWin.FindViaStandaloneTable((IStandaloneTable)myTable);
+            myWin.StandaloneTable = (IStandaloneTable)myTable;
+            //myWin.Table = myTable;
             myWin.Application = thisApplication;
             myWin.Show(true);
         }

@@ -61,6 +61,12 @@ namespace HLArcMapModule
             return map;
         }
 
+        public void RefreshTOC()
+        {
+            IMxDocument theDoc = GetIMXDocument();
+            theDoc.CurrentContentsView.Refresh(null);
+        }
+
         public IWorkspaceFactory GetWorkspaceFactory(string aFilePath, bool aTextFile = false, bool Messages = false)
         {
             // This function decides what type of feature workspace factory would be best for this file.
@@ -547,7 +553,7 @@ namespace HLArcMapModule
             // Does the group layer exist?
             if (GroupLayerExists(theGroupLayerName))
             {
-                GetGroupLayer(theGroupLayerName);
+                myGroupLayer = (IGroupLayer)GetGroupLayer(theGroupLayerName);
                 blExists = true;
             }
             else
@@ -566,7 +572,7 @@ namespace HLArcMapModule
                 IMap pMap = GetMap();
                 pMap.AddLayer(myGroupLayer);
             }
-
+            RefreshTOC();
             return true;
         }
 
@@ -803,20 +809,16 @@ namespace HLArcMapModule
         public bool CopyToCSV(string InTable, string OutTable, bool Spatial, bool Append, bool Messages = false)
         {
             // This sub copies the input table to CSV.
-
-            // Open the input table
-
-            // Check it exists (with ESRI function)
-
-
+            // For the moment only works with SDE feature classes but will work with any table.
             string aFilePath = myFileFuncs.GetDirectoryName(InTable);
             string aTabName = myFileFuncs.GetFileName(InTable);
-
+            
             ICursor myCurs = null;
             IFields fldsFields = null;
             if (Spatial)
             {
                 MessageBox.Show(aFilePath + ", " + aTabName);
+                // Needs to be made generic - add relevant workspaces if still necessary.
                 IFeatureClass myFC = GetSDEFeatureClass(aFilePath, aTabName, true);
                 myCurs = (ICursor)myFC.Search(null, false);
                 fldsFields = myFC.Fields;
@@ -894,10 +896,8 @@ namespace HLArcMapModule
                 }
             }
 
-            ITableWindow2 myWin = (ITableWindow2)new TableWindow();
-            //myWin.FindViaStandaloneTable((IStandaloneTable)myTable);
-            myWin.StandaloneTable = (IStandaloneTable)myTable;
-            //myWin.Table = myTable;
+            ITableWindow myWin = new TableWindow();
+            myWin.Table = myTable;
             myWin.Application = thisApplication;
             myWin.Show(true);
         }

@@ -363,7 +363,7 @@ namespace HLArcMapModule
         }
         #endregion
 
-        public bool AddTableLayerFromString(string aTableName, bool Messages = false)
+        public bool AddTableLayerFromString(string aTableName, string aLayerName, bool Messages = false)
         {
             // firstly get the Table
             // Does it exist? // Does not work for GeoDB tables!!
@@ -389,7 +389,7 @@ namespace HLArcMapModule
             }
 
             // Now add it to the view.
-            bool blResult = AddLayerFromTable(myTable, aTabName);
+            bool blResult = AddLayerFromTable(myTable, aLayerName);
             if (blResult)
             {
                 return true;

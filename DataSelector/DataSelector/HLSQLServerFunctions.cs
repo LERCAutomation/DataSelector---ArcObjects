@@ -76,6 +76,7 @@ namespace HLESRISQLServerFunctions
             return myCmd;
         }
 
+        # region AddSQLParameter
         public bool AddSQLParameter(ref SqlCommand aCommand, string aName, string aValue)
         {
             // Note we are passing the value as a string as this will eventually become an overloaded method which will accept
@@ -98,6 +99,20 @@ namespace HLESRISQLServerFunctions
             myParameter.Value = 0;
             if (aValue) myParameter.Value = 1;
             return true;
+        }
+        #endregion
+
+        public bool FieldExists(ref SqlConnection aConnection, string aTableName, string aColumnName)
+        {
+            string strQuery = "SELECT TOP 1 * FROM " + aTableName; //[NBNData_TVERC].[dbo].[TVERC_Spp_Full_point_Sony]
+            SqlCommand objCommand = new SqlCommand(strQuery, aConnection);
+            bool blColExists = false;
+            SqlDataReader objReader = objCommand.ExecuteReader();
+            for (int col = 0; col < objReader.FieldCount; col++)
+            {
+                if (objReader.GetName(col).ToString() == aColumnName) blColExists = true;
+            }
+            return blColExists;
         }
 
     }

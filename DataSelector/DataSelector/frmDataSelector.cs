@@ -125,10 +125,10 @@ namespace DataSelector
         private void btnOK_Click(object sender, EventArgs e)
         {
 
+            this.Cursor = Cursors.WaitCursor; 
             IApplication theApplication = (IApplication)ArcMap.Application;
             ArcMapFunctions myArcMapFuncs = new ArcMapFunctions(theApplication);
             
-            this.Cursor = Cursors.WaitCursor;
             // Run the query. Everything else is allowed to be null.
             string sDefaultSchema = myConfig.GetDatabaseSchema();
             string sTableName = lstTables.Text; 
@@ -155,14 +155,19 @@ namespace DataSelector
                 return;
             }
 
+            SqlConnection dbConn = myADOFuncs.CreateSQLConnection(myConfig.GetConnectionString());
+            
             // Decide whether or not there is a geometry field in the returned data.
             // Select the stored procedure accordingly
             string strCheck = "sp_geometry";
             bool blSpatial = sColumnNames.ToLower().Contains(strCheck);
             // If "*" is used check for the existence of a SP_GEOMETRY in the table.
-            if (sColumnNames == "*") // Untested; likely to fail.
+            if (sColumnNames == "*")
             {
-                blSpatial = myArcMapFuncs.FieldExists(myConfig.GetSDEName(), sTableName, "SP_GEOMETRY");
+                string strCheckTable = myConfig.GetDatabaseSchema() + "." + sTableName;
+                dbConn.Open();
+                blSpatial = myADOFuncs.FieldExists(ref dbConn, strCheckTable, "SP_GEOMETRY");
+                dbConn.Close();
             }
             
             // Set the temporary table names and the stored procedure names. Adjust output formats if required.
@@ -191,7 +196,6 @@ namespace DataSelector
             {
                 // User has pressed Cancel. Bring original menu to the front.
                 MessageBox.Show("Please select an output file");
-                this.Cursor = Cursors.Default;
                 this.BringToFront();
                 return;
             }
@@ -218,18 +222,17 @@ namespace DataSelector
             else if ((sOutputFormat == "Geodatabase") && (blHasExtension || !sOutputFile.Contains(".gdb"))) // It is a geodatabase file and should not have an extension.
             {
                 MessageBox.Show("Please select a file geodatabase output file");
-                this.Cursor = Cursors.Default;
                 this.BringToFront();
                 return;
             }
-            else if ((sOutputFormat != "Geodatabase") && (sOutputFile.Contains(".gdb"))) // Trying to store a non-geoDB in a gdb
+            else if ((!sOutputFormat.Contains("Geodatabase")) && (sOutputFile.Contains(".gdb"))) // Trying to store a non-geoDB in a gdb
             {
                 MessageBox.Show("Cannot store " + sOutputFormat + " inside a geodatabase. Please choose a different output location");
-                this.Cursor = Cursors.Default;
                 this.BringToFront();
                 return;
             }
             this.BringToFront();
+
 
             string strLayerName = myFileFuncs.GetFileName(sOutputFile);
             
@@ -240,7 +243,7 @@ namespace DataSelector
 
             // Now we are all set to go - do the process.
             // Set up all required parameters.
-            SqlConnection dbConn = myADOFuncs.CreateSQLConnection(myConfig.GetConnectionString());
+            //SqlConnection dbConn = myADOFuncs.CreateSQLConnection(myConfig.GetConnectionString());
             SqlCommand myCommand = myADOFuncs.CreateSQLCommand(ref dbConn, strStoredProcedure, CommandType.StoredProcedure); // Note pass connection by ref here.
             myADOFuncs.AddSQLParameter(ref myCommand, "Schema", sDefaultSchema);
             myADOFuncs.AddSQLParameter(ref myCommand, "SpeciesTable", sTableName);
@@ -282,14 +285,12 @@ namespace DataSelector
             {
                 // export points and polygons
                 // How is the data to be exported?
-                //MessageBox.Show(sOutputFormat);
-                //MessageBox.Show(sOutputFile);
                 if (sOutputFormat == "Geodatabase FC") 
                 {
                     // Easy, export without further ado.
                     strOutPoints = sOutputFile + "_Point";
                     strOutPolys = sOutputFile + "_Poly";
-                    //MessageBox.Show("About to export points to " + strOutPoints);
+                    
                     blResult = myArcMapFuncs.CopyFeatures(strPointOutTab, strOutPoints);
                     if (!blResult)
                     {
@@ -313,7 +314,7 @@ namespace DataSelector
                     sOutputFile = myFileFuncs.ReturnWithoutExtension(sOutputFile);
                     strOutPoints = sOutputFile + "_Point.shp";
                     strOutPolys = sOutputFile + "_Poly.shp";
-                    MessageBox.Show(strOutPoints);
+                    
                     blResult = myArcMapFuncs.CopyFeatures(strPointOutTab, strOutPoints);
                     if (!blResult)
                     {
@@ -331,12 +332,18 @@ namespace DataSelector
                         return;
                     }
                 }
-                else if (sOutputFormat == "Text file")
+                else if (sOutputFormat == "Text file" || sOutputFormat == "dBASE file")
                 {
                     // Not a spatial export, but it is a spatial layer so there are two files.
                     // Function pulls them back together again.
                     blFlatTable = true;
-                    
+                    string sFinalFile = "";
+                    if (sOutputFormat == "dBASE file")
+                    {
+                        sFinalFile = sOutputFile;
+                        sOutputFile = myFileFuncs.GetDirectoryName(sOutputFile) + "\\Temp.csv";
+                    }
+
                     blResult = myArcMapFuncs.CopyToCSV(strPointOutTab, sOutputFile, true, false, true);
                     if (!blResult)
                     {
@@ -353,25 +360,34 @@ namespace DataSelector
                         this.Cursor = Cursors.Default;
                         this.BringToFront();
                     }
-                }
-                else
-                {
-                    // it is a dbf output of a spatial selection. To test.
-                    blResult = myArcMapFuncs.CopyTable(strPointOutTab, sOutputFile);
-                    if (!blResult)
+
+                    // If the end output is a dBASE file, export the resulting csv to dBASE.
+                    if (sOutputFormat == "dBASE file")
                     {
-                        MessageBox.Show("Error exporting point output table to dbf file " + sOutputFile);
-                        this.Cursor = Cursors.Default;
-                        this.BringToFront();
-                        return;
+                        blResult = myArcMapFuncs.CopyTable(sOutputFile, sFinalFile);
+                        // Delete csv file.
+                        try
+                        {
+                            File.Delete(sOutputFile);
+                        }
+                        catch (Exception ex)
+                        {
+                            MessageBox.Show("Error deleting temporary text file: " + ex.Message);
+                            this.Cursor = Cursors.Default;
+                            this.BringToFront();
+                        }
+                        if (!blResult)
+                        {
+                            MessageBox.Show("Error exporting output table to dBASE file " + sFinalFile);
+                            this.Cursor = Cursors.Default;
+                            this.BringToFront();
+                            return;
+                        }
+                        sOutputFile = sFinalFile;
                     }
-                    blResult = myArcMapFuncs.AppendTable(strPolyOutTab, sOutputFile); // This throws an error.
-                    if (!blResult)
+                    else
                     {
-                        MessageBox.Show("Error appending polygon output table to dbf file " + sOutputFile);
-                        this.Cursor = Cursors.Default;
-                        this.BringToFront();
-                        return;
+                        myArcMapFuncs.AddTableLayerFromString(sOutputFile, strLayerName);
                     }
                 }
             }
@@ -388,6 +404,7 @@ namespace DataSelector
                         this.BringToFront();
                         return;
                     }
+                    myArcMapFuncs.AddTableLayerFromString(sOutputFile, strLayerName);
                 }
                 else
                 {
@@ -415,10 +432,6 @@ namespace DataSelector
             }
             else
             {
-                // Only one output remains
-                myArcMapFuncs.AddTableLayerFromString(sOutputFile);
-                // Open table view.
-                strLayerName = myFileFuncs.GetFileName(sOutputFile);
                 myArcMapFuncs.ShowTable(strLayerName);
             }
             
@@ -437,8 +450,14 @@ namespace DataSelector
             //MessageBox.Show(aTest.ToString());
             //ILayer myLayer = myFuncs.GetLayer("HesTest");
             //myFuncs.MoveToGroupLayer("myTest", myLayer);
-            myFuncs.ShowTable("HesTab", true);
-            myFuncs.ShowTable("HesCSV", true);
+            //myFuncs.ShowTable("HesTab", true);
+            //myFuncs.ShowTable("HesCSV", true);
+            SqlConnection dbConn = myADOFuncs.CreateSQLConnection(myConfig.GetConnectionString());
+            string strTable = myConfig.GetDatabaseSchema() + "." + "TVERC_Spp_Full";
+            dbConn.Open();
+            bool blTest = myADOFuncs.FieldExists(ref dbConn, strTable, "SP_GEOMETRY");
+            dbConn.Close();
+            MessageBox.Show(blTest.ToString());
         }
     }
 }

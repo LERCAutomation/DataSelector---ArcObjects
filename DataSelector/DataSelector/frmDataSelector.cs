@@ -42,6 +42,12 @@ namespace DataSelector
             InitializeComponent();
             // Fill with the relevant.
             myConfig = new SelectorToolConfig(); // Should find the config file automatically.
+            if (myConfig == null)
+            {
+                //TODO: This will need to be changed so that it is handled correctly
+                MessageBox.Show("XML not loaded");
+            }
+
             myArcSDEFuncs = new ESRISQLServerFunctions();
             myADOFuncs = new ADOSQLServerFunctions();
             myFileFuncs = new FileFunctions();
@@ -125,7 +131,7 @@ namespace DataSelector
         private void btnOK_Click(object sender, EventArgs e)
         {
 
-            this.Cursor = Cursors.WaitCursor; 
+            this.Cursor = Cursors.WaitCursor;
             IApplication theApplication = (IApplication)ArcMap.Application;
             ArcMapFunctions myArcMapFuncs = new ArcMapFunctions(theApplication);
             

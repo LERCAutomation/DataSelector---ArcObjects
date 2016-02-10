@@ -867,6 +867,9 @@ namespace HLArcMapModule
                 for (int i = 0; i < intFieldCount; i++)
                 {
                     var theValue = aRow.get_Value(i);
+                    // Wrap value if quotes if it is a string that contains a comma
+                    if ((theValue is string) &&
+                       (theValue.ToString().Contains(","))) theValue = "\"" + theValue.ToString() + "\"";
                     strRow = strRow + theValue.ToString();
                     if (i < intFieldCount - 1) strRow = strRow + ",";
                 }

@@ -11,6 +11,7 @@ using HLStringFunctions;
 
 using System.Data;
 using System.Data.SqlClient;
+using System.Text.RegularExpressions;
 
 
 namespace HLESRISQLServerFunctions
@@ -27,9 +28,9 @@ namespace HLESRISQLServerFunctions
 
         public List<string> GetTableNames(IWorkspace aWorkspace, string IncludeWildcard, string ExcludeWildcard, bool IncludeFullName = false)
         {
-            // Define the wildcards 
-            Wildcard theInclude = new Wildcard(IncludeWildcard);
-            Wildcard theExclude = new Wildcard(ExcludeWildcard);
+            // Define the wildcards as case insensitive
+            Wildcard theInclude = new Wildcard(IncludeWildcard, RegexOptions.IgnoreCase);
+            Wildcard theExclude = new Wildcard(ExcludeWildcard, RegexOptions.IgnoreCase);
 
             List<string> theStringList = new List<string>();
             IEnumDatasetName enumDatasetName = aWorkspace.get_DatasetNames(esriDatasetType.esriDTAny);

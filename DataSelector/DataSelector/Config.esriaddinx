@@ -10,7 +10,7 @@
   <Targets>
     <Target name="Desktop" version="10.2" />
   </Targets>
-  <AddIn language="CLR4.0" library="DataSelector.dll" namespace="DataSelector">
+  <AddIn language="CLR" library="DataSelector.dll" namespace="DataSelector">
     <ArcMap>
       <Commands>
         <Button id="Hester_Lyons_Consulting_DataSelector_Button1" class="LaunchDataSelector" message="Data extractor tool for Sussex Environmental Records Centre. Define SQL query, results are shown in ArcMap and saved locally." caption="Data Selector" tip="Extract data from species database through SQL query" category="Add-In Controls" image="Images\Button1.png" />

@@ -6,6 +6,7 @@ using System.Xml;
 
 using System.Windows.Forms;
 using HLFileFunctions;
+using DataSelector.Properties;
 
 
 // This module reads the config XML file and stores the results
@@ -36,10 +37,37 @@ namespace HLSelectorToolConfig
         {
             // Open xml
             myFileFuncs = new FileFunctions();
-            string strAppDLL = System.Reflection.Assembly.GetExecutingAssembly().Location;
-            string strFolder = myFileFuncs.GetDirectoryName(strAppDLL);
-            // Get the XML file
-            string strXMLFile = strFolder + @"\AODataSelector.xml";
+            string strXMLFile = null;
+
+            try
+            {
+                // Get the XML file
+                strXMLFile = Settings.Default.XMLFile;
+
+                // If the XML file path is blank or doesn't exist
+                if (String.IsNullOrEmpty(strXMLFile) || (!myFileFuncs.FileExists(strXMLFile)))
+                {
+                    // Prompt the user for the correct file path
+                    string strFolder = GetConfigFilePath();
+                    if (!String.IsNullOrEmpty(strFolder))
+                        strXMLFile = strFolder + @"\DataSelector.xml";
+                }
+
+                // Check the xml file path exists
+                if (myFileFuncs.FileExists(strXMLFile))
+                {
+                    Settings.Default.XMLFile = strXMLFile;
+                    Settings.Default.Save();
+                }
+                else
+                {
+                    MessageBox.Show("XML File not found.");
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "Error " + ex.ToString(), MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
             
             // Read the file.
             XmlDocument xmlConfig = new XmlDocument();
@@ -62,6 +90,24 @@ namespace HLSelectorToolConfig
             DefaultSetSymbology = xmlDataSelector["DefaultSetSymbology"].InnerText;
             LayerLocation = xmlDataSelector["LayerLocation"].InnerText;
             EnableSpatialPlotting = xmlDataSelector["EnableSpatialPlotting"].InnerText;
+        }
+        private string GetConfigFilePath()
+        {
+            // Create folder dialog.
+            FolderBrowserDialog xmlFolder = new FolderBrowserDialog();
+
+            // Set the folder dialog title.
+            xmlFolder.Description = "Select folder containing 'DataSelector.xml' file ...";
+            xmlFolder.ShowNewFolderButton = false;
+
+            // Show folder dialog.
+            if (xmlFolder.ShowDialog() == DialogResult.OK)
+            {
+                // Return the selected path.
+                return xmlFolder.SelectedPath;
+            }
+            else
+                return null;
         }
 
         // Functions to return each element under here.

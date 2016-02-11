@@ -115,11 +115,17 @@ namespace HLArcMapModule
         // This is incredibly quick.
         {
             // Check input first.
-            if (myFileFuncs.DirExists(aFilePath) == false || aDatasetName == null)
+            string aTestPath = aFilePath;
+            if (aFilePath.Contains(".sde"))
             {
-                if (Messages) MessageBox.Show("Please provide valid input", "Open Feature Class from Disk");
+                aTestPath = myFileFuncs.GetDirectoryName(aFilePath);
+            }
+            if (myFileFuncs.DirExists(aTestPath) == false || aDatasetName == null)
+            {
+                if (Messages) MessageBox.Show("Please provide valid input", "Get Featureclass");
                 return null;
             }
+            
 
             IWorkspaceFactory pWSF = GetWorkspaceFactory(aFilePath);
             IFeatureWorkspace pWS = (IFeatureWorkspace)pWSF.OpenFromFile(aFilePath, 0);
@@ -310,16 +316,20 @@ namespace HLArcMapModule
                 }
                 return false;
             }
-
         }
 
         #region GetTable
         public ITable GetTable(string aFilePath, string aDatasetName, bool Messages = false)
         {
             // Check input first.
-            if (myFileFuncs.DirExists(aFilePath) == false || aDatasetName == null)
+            string aTestPath = aFilePath;
+            if (aFilePath.Contains(".sde"))
             {
-                if (Messages) MessageBox.Show("Please provide valid input", "Open Feature Class from Disk");
+                aTestPath = myFileFuncs.GetDirectoryName(aFilePath);
+            }
+            if (myFileFuncs.DirExists(aTestPath) == false || aDatasetName == null)
+            {
+                if (Messages) MessageBox.Show("Please provide valid input", "Get Table");
                 return null;
             }
             bool blText = false;
@@ -817,9 +827,8 @@ namespace HLArcMapModule
             IFields fldsFields = null;
             if (Spatial)
             {
-                MessageBox.Show(aFilePath + ", " + aTabName);
                 // Needs to be made generic - add relevant workspaces if still necessary.
-                IFeatureClass myFC = GetSDEFeatureClass(aFilePath, aTabName, true);
+                IFeatureClass myFC = GetFeatureClass(aFilePath, aTabName, true); //GetSDEFeatureClass(aFilePath, aTabName, true);
                 myCurs = (ICursor)myFC.Search(null, false);
                 fldsFields = myFC.Fields;
             }

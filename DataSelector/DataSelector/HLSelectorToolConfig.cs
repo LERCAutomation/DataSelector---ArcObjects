@@ -63,6 +63,7 @@ namespace HLSelectorToolConfig
                 else
                 {
                     MessageBox.Show("XML File not found.");
+                    // Deal with this.
                 }
             }
             catch (Exception ex)

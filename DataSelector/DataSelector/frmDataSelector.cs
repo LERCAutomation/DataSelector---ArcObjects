@@ -74,7 +74,6 @@ namespace DataSelector
         private void btnCancel_Click(object sender, EventArgs e)
         {
             this.Close();
-
         }
 
         private void btnSave_Click(object sender, EventArgs e)
@@ -125,7 +124,6 @@ namespace DataSelector
                     allInfo = allInfo + qryLine;
                 }
                 txtColumns.Text = allInfo;
-
             }
             
 
@@ -154,6 +152,14 @@ namespace DataSelector
             if (string.IsNullOrEmpty(sUserID))
             {
                 sUserID = "Temp";
+            }
+
+            if (string.IsNullOrEmpty(sColumnNames))
+            {
+                MessageBox.Show("Please specify which columns you wish to select");
+                this.BringToFront();
+                this.Cursor = Cursors.Default;
+                return;
             }
 
             // Table name should always be selected
@@ -410,7 +416,8 @@ namespace DataSelector
                 if (sOutputFormat == "Text file")
                 {
                     // We are exporting a non-spatial output to text file.
-                    blResult = myArcMapFuncs.CopyToCSV(strPointOutTab, sOutputFile, true, false, true);
+                    MessageBox.Show(strOutTab + ", " + sOutputFile);
+                    blResult = myArcMapFuncs.CopyToCSV(strOutTab, sOutputFile, false, false, true);
                     if (!blResult)
                     {
                         MessageBox.Show("Error exporting output table to text file " + sOutputFile);
@@ -469,8 +476,10 @@ namespace DataSelector
             }
             
             this.Cursor = Cursors.Default;
-            MessageBox.Show("Process complete");
-            this.BringToFront();
+            DialogResult dlResult = MessageBox.Show("Process complete. Do you wish to close the form?", "Data Selector", MessageBoxButtons.YesNo);
+            if (dlResult == System.Windows.Forms.DialogResult.Yes)
+                this.Close();
+            else this.BringToFront();
     
         }
 

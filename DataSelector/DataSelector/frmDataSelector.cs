@@ -55,7 +55,10 @@ namespace DataSelector
             string strSDE = myConfig.GetSDEName();
             string strIncludeWildcard = myConfig.GetIncludeWildcard();
             string strExcludeWildcard = myConfig.GetExcludeWildcard();
-            //MessageBox.Show(strSDE);
+            string strDefaultFormat = myConfig.GetDefaultFormat();
+
+            cmbOutFormat.Text = strDefaultFormat;
+
             IWorkspace wsSQLWorkspace = myArcSDEFuncs.OpenArcSDEConnection(strSDE);
             List<string> strTableList = myArcSDEFuncs.GetTableNames(wsSQLWorkspace, strIncludeWildcard, strExcludeWildcard);
             foreach (string strItem in strTableList)
@@ -158,6 +161,7 @@ namespace DataSelector
             {
                 MessageBox.Show("Please select a table to query from");
                 this.BringToFront();
+                this.Cursor = Cursors.Default;
                 return;
             }
 
@@ -197,12 +201,13 @@ namespace DataSelector
 
             // Get the output file name taking account of adjusted output formats.
             sOutputFile = myArcMapFuncs.GetOutputFileName(sOutputFormat, myConfig.GetDefaultExtractPath());
+            this.BringToFront();
             
             if (sOutputFile == "None")
             {
                 // User has pressed Cancel. Bring original menu to the front.
                 MessageBox.Show("Please select an output file");
-                this.BringToFront();
+                this.Cursor = Cursors.Default;
                 return;
             }
 
@@ -228,16 +233,18 @@ namespace DataSelector
             else if ((sOutputFormat == "Geodatabase") && (blHasExtension || !sOutputFile.Contains(".gdb"))) // It is a geodatabase file and should not have an extension.
             {
                 MessageBox.Show("Please select a file geodatabase output file");
+                this.Cursor = Cursors.Default;
                 this.BringToFront();
                 return;
             }
             else if ((!sOutputFormat.Contains("Geodatabase")) && (sOutputFile.Contains(".gdb"))) // Trying to store a non-geoDB in a gdb
             {
                 MessageBox.Show("Cannot store " + sOutputFormat + " inside a geodatabase. Please choose a different output location");
+                this.Cursor = Cursors.Default;
                 this.BringToFront();
                 return;
             }
-            this.BringToFront();
+            this.Focus();
 
 
             string strLayerName = myFileFuncs.GetFileName(sOutputFile);
@@ -260,13 +267,13 @@ namespace DataSelector
             myADOFuncs.AddSQLParameter(ref myCommand, "UserID", sUserID);
             myADOFuncs.AddSQLParameter(ref myCommand, "Split", strSplit);
             
-            // Open ADO connection to database
-            dbConn.Open();
-
+            // Open ADO connection to database and
             // Run the stored procedure.
             try
             {
+                dbConn.Open();
                 string strRowsAffect = myCommand.ExecuteNonQuery().ToString();
+                dbConn.Close();
             }
             catch (Exception ex)
             {
@@ -274,6 +281,7 @@ namespace DataSelector
                     ex.Message);
                 this.Cursor = Cursors.Default;
                 this.BringToFront();
+                dbConn.Close();
                 return;
             }
 
@@ -426,7 +434,26 @@ namespace DataSelector
                 }
             }
            
-
+            // Delete the temporary tables in the SQL database
+            strStoredProcedure = "AFClearSppSubset";
+            SqlCommand myCommand2 = myADOFuncs.CreateSQLCommand(ref dbConn, strStoredProcedure, CommandType.StoredProcedure); // Note pass connection by ref here.
+            myADOFuncs.AddSQLParameter(ref myCommand2, "Schema", sDefaultSchema);
+            myADOFuncs.AddSQLParameter(ref myCommand2, "SpeciesTable", sTableName);
+            myADOFuncs.AddSQLParameter(ref myCommand2, "UserId", sUserID);
+            try
+            {
+                dbConn.Open();
+                string strRowsAffect = myCommand2.ExecuteNonQuery().ToString();
+                dbConn.Close();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Could not execute stored procedure. System returned the following message: " +
+                    ex.Message);
+                this.Cursor = Cursors.Default;
+                this.BringToFront();
+                return;
+            }
             // Add the results to the screen.
             
             if (!blFlatTable) // Only truly spatial output has two files.

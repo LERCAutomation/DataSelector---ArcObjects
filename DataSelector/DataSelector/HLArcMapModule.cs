@@ -138,8 +138,17 @@ namespace HLArcMapModule
             return pFC;
         }
 
+        public IFeatureClass GetFeatureClass(string aFullPath, bool Messages = false)
+        {
+            string aFilePath = myFileFuncs.GetDirectoryName(aFullPath);
+            string aDatasetName = myFileFuncs.GetFileName(aFullPath);
+            IFeatureClass pFC = GetFeatureClass(aFilePath, aDatasetName, Messages);
+            return pFC;
+        }
+
         public IFeatureLayer GetFeatureLayerFromString(string aFeatureClassName, bool Messages = false)
         {
+            // as far as I can see this does not work for geodatabase files.
             // firstly get the Feature Class
             // Does it exist?
             if (!myFileFuncs.FileExists(aFeatureClassName))
@@ -744,6 +753,15 @@ namespace HLArcMapModule
         public bool CopyTable(string InTable, string OutTable, bool Messages = false)
         {
             // This works absolutely fine for dbf and geodatabase but does not export to CSV.
+
+            // Does the input table have a SP_GEOMETRY field?
+            bool blHasGeometry = false;
+            IField fldCheck = getTableField(InTable, "SP_GEOMETRY");
+            if (fldCheck != null)
+            {
+                blHasGeometry = true;
+            }
+
             ESRI.ArcGIS.Geoprocessor.Geoprocessor gp = new ESRI.ArcGIS.Geoprocessor.Geoprocessor();
             gp.OverwriteOutput = true;
 
@@ -751,7 +769,6 @@ namespace HLArcMapModule
 
             // Create a variant array to hold the parameter values.
             IVariantArray parameters = new VarArrayClass();
-
 
             // Populate the variant array with parameter values.
             parameters.Add(InTable);
@@ -766,6 +783,27 @@ namespace HLArcMapModule
                 while (myresult.Status == esriJobStatus.esriJobExecuting)
                     Thread.Sleep(1000);
                     // Wait for 1 second.
+
+                if (blHasGeometry)
+                {
+                    parameters.Remove(1);
+                    parameters.Remove(0);
+                    parameters.Add(OutTable);
+                    parameters.Add("SP_GEOMETRY");
+                    try
+                    {
+                        myresult = (IGeoProcessorResult)gp.Execute("DeleteField_management", parameters, null);
+                        // Wait until execution completes.
+                        while (myresult.Status == esriJobStatus.esriJobExecuting)
+                            Thread.Sleep(1000);
+                            // Wait for 1 second.     
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        return false;
+                    }
+                }
                 if (Messages)
                 {
                     MessageBox.Show("Process complete");
@@ -776,6 +814,68 @@ namespace HLArcMapModule
             {
                 MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return false;
+            }
+        }
+
+        public bool AlterFieldAliasName(string aDatasetName, string aFieldName, string theAliasName, bool Messages = false)
+        {
+            // This script changes the field alias of a the named field in the layer.
+            IObjectClass myObject = (IObjectClass)GetFeatureClass(aDatasetName);
+            IClassSchemaEdit myEdit = (IClassSchemaEdit)myObject;
+            try
+            {
+                myEdit.AlterFieldAliasName(aFieldName, theAliasName);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return false;
+            }
+        }
+
+        public IField getFCField(string InputDirectory, string FeatureclassName, string FieldName, bool Messages = false)
+        {
+            IFeatureClass featureClass = GetFeatureClass(InputDirectory, FeatureclassName);
+            // Find the index of the requested field.
+            int fieldIndex = featureClass.FindField(FieldName);
+
+            // Get the field from the feature class's fields collection.
+            if (fieldIndex > -1)
+            {
+                IFields fields = featureClass.Fields;
+                IField field = fields.get_Field(fieldIndex);
+                return field;
+            }
+            else
+            {
+                if (Messages)
+                {
+                    MessageBox.Show("The field " + FieldName + " was not found in the featureclass " + FeatureclassName);
+                }
+                return null;
+            }
+        }
+
+        public IField getTableField(string TableName, string FieldName, bool Messages = false)
+        {
+            ITable theTable = GetTable(myFileFuncs.GetDirectoryName(TableName), myFileFuncs.GetFileName(TableName), Messages);
+            int fieldIndex = theTable.FindField(FieldName);
+
+            // Get the field from the feature class's fields collection.
+            if (fieldIndex > -1)
+            {
+                IFields fields = theTable.Fields;
+                IField field = fields.get_Field(fieldIndex);
+                return field;
+            }
+            else
+            {
+                if (Messages)
+                {
+                    MessageBox.Show("The field " + FieldName + " was not found in the table " + myFileFuncs.GetFileName(TableName));
+                }
+                return null;
             }
         }
 
@@ -854,7 +954,7 @@ namespace HLArcMapModule
             string strField = null;
             string strHeader = "";
             int intFieldCount = fldsFields.FieldCount;
-
+            int intIgnore = -1;
             if (!Append)
             {
                 // iterate through the fields in the collection to create header.
@@ -862,10 +962,14 @@ namespace HLArcMapModule
                 {
                     // Get the field at the given index.
                     strField = fldsFields.get_Field(i).Name;
-                    strHeader = strHeader + strField;
-                    if (i < intFieldCount - 1) strHeader = strHeader + ","; // Only add comma up to second to last one.
+                    if (strField == "SP_GEOMETRY")
+                        intIgnore = i;
+                    else
+                        strHeader = strHeader + strField + ",";
+//                        if (i < intFieldCount - 1) strHeader = strHeader + ","; // Only add comma up to second to last one
                 }
                 // Write the header.
+                strHeader = strHeader.Substring(0, strHeader.Length - 1);
                 theOutput.WriteLine(strHeader);
             }
             // Now write the file.
@@ -875,12 +979,15 @@ namespace HLArcMapModule
                 string strRow = "";
                 for (int i = 0; i < intFieldCount; i++)
                 {
-                    var theValue = aRow.get_Value(i);
-                    // Wrap value if quotes if it is a string that contains a comma
-                    if ((theValue is string) &&
-                       (theValue.ToString().Contains(","))) theValue = "\"" + theValue.ToString() + "\"";
-                    strRow = strRow + theValue.ToString();
-                    if (i < intFieldCount - 1) strRow = strRow + ",";
+                    if (i != intIgnore)
+                    {
+                        var theValue = aRow.get_Value(i);
+                        // Wrap value if quotes if it is a string that contains a comma
+                        if ((theValue is string) &&
+                           (theValue.ToString().Contains(","))) theValue = "\"" + theValue.ToString() + "\"";
+                        strRow = strRow + theValue.ToString();
+                        if (i < intFieldCount - 1) strRow = strRow + ",";
+                    }
                 }
                 theOutput.WriteLine(strRow);
                 aRow = myCurs.NextRow();

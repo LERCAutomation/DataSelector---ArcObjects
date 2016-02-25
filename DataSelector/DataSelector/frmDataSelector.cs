@@ -327,6 +327,10 @@ namespace DataSelector
                         this.BringToFront();
                         return;
                     }
+                    // Change field aliases. Note it thinks this has worked, but it hasn't.
+                    blResult = myArcMapFuncs.AlterFieldAliasName(strOutPolys, "SP_GEOMETRY", "Shape");
+                    //MessageBox.Show(blResult.ToString());
+                    myArcMapFuncs.AlterFieldAliasName(strOutPoints, "SP_GEOMETRY", "Shape");
                 }
                 else if (sOutputFormat == "Shapefile")
                 {
@@ -494,12 +498,20 @@ namespace DataSelector
             //myFuncs.MoveToGroupLayer("myTest", myLayer);
             //myFuncs.ShowTable("HesTab", true);
             //myFuncs.ShowTable("HesCSV", true);
-            SqlConnection dbConn = myADOFuncs.CreateSQLConnection(myConfig.GetConnectionString());
-            string strTable = myConfig.GetDatabaseSchema() + "." + "TVERC_Spp_Full";
-            dbConn.Open();
-            bool blTest = myADOFuncs.FieldExists(ref dbConn, strTable, "SP_GEOMETRY");
-            dbConn.Close();
-            MessageBox.Show(blTest.ToString());
+            //SqlConnection dbConn = myADOFuncs.CreateSQLConnection(myConfig.GetConnectionString());
+            //string strTable = myConfig.GetDatabaseSchema() + "." + "TVERC_Spp_Full";
+            //dbConn.Open();
+            //bool blTest = myADOFuncs.FieldExists(ref dbConn, strTable, "SP_GEOMETRY");
+            //dbConn.Close();
+            //MessageBox.Show(blTest.ToString());
+            IObjectClass myObject = (IObjectClass)myFuncs.GetFeatureClass(@"H:\Dev\LERCAutomation\DataSelector---ArcObjects\Extracts\Testing.gdb",
+                "Whitethroat_Poly");
+            IClassSchemaEdit myEdit = (IClassSchemaEdit)myObject;
+            myEdit.AlterFieldAliasName("SP_GEOMETRY", "Shape");
+            myEdit.AlterFieldAliasName("SP_GEOMETRY_Area", "Shape_Area");
+            myEdit.AlterFieldAliasName("SP_GEOMETRY_Length", "Shape_Length");
+            MessageBox.Show("Field names changed");
+               
         }
     }
 }

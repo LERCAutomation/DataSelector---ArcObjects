@@ -56,6 +56,9 @@ namespace HLESRISQLServerFunctions
                 }
                 datasetName = enumDatasetName.Next();
             }
+            // Tidy up.
+            enumDatasetName = null;
+            datasetName = null;
             return theStringList;
         }
     
@@ -105,7 +108,7 @@ namespace HLESRISQLServerFunctions
 
         public bool FieldExists(ref SqlConnection aConnection, string aTableName, string aColumnName)
         {
-            string strQuery = "SELECT TOP 1 * FROM " + aTableName; //[NBNData_TVERC].[dbo].[TVERC_Spp_Full_point_Sony]
+            string strQuery = "SELECT TOP 1 * FROM " + aTableName;
             SqlCommand objCommand = new SqlCommand(strQuery, aConnection);
             bool blColExists = false;
             SqlDataReader objReader = objCommand.ExecuteReader();
@@ -113,8 +116,56 @@ namespace HLESRISQLServerFunctions
             {
                 if (objReader.GetName(col).ToString() == aColumnName) blColExists = true;
             }
+            objCommand.Dispose();
+            objReader.Dispose();
             return blColExists;
         }
+
+        public bool TableExists(ref SqlConnection aConnection, string aTableName)
+        {
+            bool blTableExists = false;
+            List<string> tables = new List<string>();
+            DataTable dt = aConnection.GetSchema("Tables");
+            foreach (DataRow row in dt.Rows)
+            {
+                string tablename = (string)row[2];
+                if (tablename == aTableName)
+                    blTableExists = true;
+            }
+            dt.Dispose();
+            return blTableExists;
+        }
+
+        public bool TableHasRows(ref SqlConnection aConnection, string aTableName)
+        {
+            bool blHasRows = false;
+            System.Data.SqlClient.SqlCommand CheckNone = new System.Data.SqlClient.SqlCommand(
+                "IF EXISTS(SELECT * from " + aTableName + ") SELECT 1 ELSE SELECT 0", aConnection);
+            int result = (int)CheckNone.ExecuteScalar();
+            if (result == 1)
+                blHasRows = true;
+
+            CheckNone.Dispose();
+            return blHasRows;
+        }
+
+        public string[] GetFieldNames(ref SqlConnection aConnection, string aTableName)
+        {
+            List<string> strFieldNames = new List<string>();
+
+            string strQuery = "SELECT TOP 1 * FROM " + aTableName;
+            SqlCommand objCommand = new SqlCommand(strQuery, aConnection);
+
+            SqlDataReader objReader = objCommand.ExecuteReader();
+            for (int col = 0; col < objReader.FieldCount; col++)
+            {
+                strFieldNames.Add(objReader.GetName(col).ToString());
+            }
+            objCommand.Dispose();
+            objReader.Dispose();
+            return strFieldNames.ToArray();
+        }
+        
 
     }
 }

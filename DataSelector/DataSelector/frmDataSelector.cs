@@ -37,37 +37,52 @@ namespace DataSelector
         ESRISQLServerFunctions myArcSDEFuncs;
         ADOSQLServerFunctions myADOFuncs;
         FileFunctions myFileFuncs;
+        bool blOpenForm;
         public frmDataSelector()
         {
             InitializeComponent();
+            blOpenForm = true;
             // Fill with the relevant.
             myConfig = new SelectorToolConfig(); // Should find the config file automatically.
-            if (myConfig == null)
+            if (myConfig.GetFoundXML() == false)
             {
-                //TODO: This will need to be changed so that it is handled correctly
-                MessageBox.Show("XML not loaded");
+                MessageBox.Show("XML file not found; form cannot load.");
+                blOpenForm = false;
+            }
+            else if (myConfig.GetLoadedXML() == false)
+            {
+                MessageBox.Show("Error loading XML File; form cannot load.");
+                blOpenForm = false;
             }
 
-            myArcSDEFuncs = new ESRISQLServerFunctions();
-            myADOFuncs = new ADOSQLServerFunctions();
-            myFileFuncs = new FileFunctions();
-            // fill the list box with SQL tables
-            string strSDE = myConfig.GetSDEName();
-            string strIncludeWildcard = myConfig.GetIncludeWildcard();
-            string strExcludeWildcard = myConfig.GetExcludeWildcard();
-            string strDefaultFormat = myConfig.GetDefaultFormat();
-
-            cmbOutFormat.Text = strDefaultFormat;
-
-            IWorkspace wsSQLWorkspace = myArcSDEFuncs.OpenArcSDEConnection(strSDE);
-            List<string> strTableList = myArcSDEFuncs.GetTableNames(wsSQLWorkspace, strIncludeWildcard, strExcludeWildcard);
-            foreach (string strItem in strTableList)
+            if (blOpenForm)
             {
-                lstTables.Items.Add(strItem);
+                myArcSDEFuncs = new ESRISQLServerFunctions();
+                myADOFuncs = new ADOSQLServerFunctions();
+                myFileFuncs = new FileFunctions();
+                // fill the list box with SQL tables
+                string strSDE = myConfig.GetSDEName();
+                string strIncludeWildcard = myConfig.GetIncludeWildcard();
+                string strExcludeWildcard = myConfig.GetExcludeWildcard();
+                string strDefaultFormat = myConfig.GetDefaultFormat();
+
+                cmbOutFormat.Text = strDefaultFormat;
+
+                IWorkspace wsSQLWorkspace = myArcSDEFuncs.OpenArcSDEConnection(strSDE);
+                List<string> strTableList = myArcSDEFuncs.GetTableNames(wsSQLWorkspace, strIncludeWildcard, strExcludeWildcard);
+                foreach (string strItem in strTableList)
+                {
+                    lstTables.Items.Add(strItem);
+                }
+                // Close the SQL connection
+                wsSQLWorkspace = null;
+                // However keep the Config and SQLFuncs objects alive for use later in the form.
             }
-            // Close the SQL connection
-            wsSQLWorkspace = null;
-            // However keep the Config and SQLFuncs objects alive for use later in the form.
+            else
+            {
+                    Load += (s, e) => Close();
+                    return;
+            }
             
         }
 
@@ -175,17 +190,27 @@ namespace DataSelector
             
             // Decide whether or not there is a geometry field in the returned data.
             // Select the stored procedure accordingly
-            string strCheck = "sp_geometry";
-            bool blSpatial = sColumnNames.ToLower().Contains(strCheck);
-            // If "*" is used check for the existence of a SP_GEOMETRY in the table.
+            string[] strGeometryFields = {"SP_GEOMETRY", "Shape" }; // Expand as required.
+            bool blSpatial = false;
+            foreach (string strField in strGeometryFields)
+            {
+                if (sColumnNames.ToLower().Contains(strField.ToLower()))
+                    blSpatial = true;
+            }
+
+            // If "*" is used check for the existence of a geometry field in the table.
             if (sColumnNames == "*")
             {
                 string strCheckTable = myConfig.GetDatabaseSchema() + "." + sTableName;
                 dbConn.Open();
-                blSpatial = myADOFuncs.FieldExists(ref dbConn, strCheckTable, "SP_GEOMETRY");
+                foreach (string strField in strGeometryFields)
+                {
+                    if (myADOFuncs.FieldExists(ref dbConn, strCheckTable, strField))
+                        blSpatial = true;
+                }
                 dbConn.Close();
             }
-            
+
             // Set the temporary table names and the stored procedure names. Adjust output formats if required.
             bool blFlatTable = !blSpatial; // to start with
             string strStoredProcedure = "AFSelectSppSubset"; // Default for all data
@@ -206,7 +231,53 @@ namespace DataSelector
             }
 
             // Get the output file name taking account of adjusted output formats.
-            sOutputFile = myArcMapFuncs.GetOutputFileName(sOutputFormat, myConfig.GetDefaultExtractPath());
+            sOutputFile = "None";
+            bool blDone = false;
+            while (!blDone)
+            {
+                sOutputFile = myArcMapFuncs.GetOutputFileName(sOutputFormat, myConfig.GetDefaultExtractPath());
+                if (blSpatial)
+                {
+                    // Check if the outputfile_point or outputfile_poly already exists.
+                    if (sOutputFile != "None")
+                    {
+                        
+                        string sTest1 = "";
+                        string sTest2 = "";
+                        if (sOutputFormat.Contains("Geodatabase"))
+                        {
+                            MessageBox.Show("Testing");
+                            sTest1 = sOutputFile + "_Point";
+                            sTest2 = sOutputFile + "_Poly";
+
+                        }
+                        else if (sOutputFormat == "Shapefile")
+                        {
+                            string strExtensionTest1 = sOutputFile.Substring(sOutputFile.Length - 4, 4).Substring(0, 1);
+                            if (strExtensionTest1 == ".")
+                            {
+                                sTest1 = sOutputFile.Substring(0, sOutputFile.Length - 4) + "_Point.shp";
+                                sTest2 = sOutputFile.Substring(0, sOutputFile.Length - 4) + "_Poly.shp";
+                            }
+                            else
+                            {
+                                sTest1 = sOutputFile + "_Point.shp";
+                                sTest2 = sOutputFile + "_Poly.shp";
+                            }
+                        }
+
+                        if (myArcMapFuncs.FeatureclassExists(sTest1) || myArcMapFuncs.FeatureclassExists(sTest2))
+                        {
+                            DialogResult dlResult1 = MessageBox.Show("The output file already exists. Do you want to overwrite it?", "Data Selector", MessageBoxButtons.YesNo);
+                            if (dlResult1 == System.Windows.Forms.DialogResult.Yes)
+                                blDone = true;
+                        }
+                        else
+                            blDone = true;
+                    }
+                }
+                
+            }
             this.BringToFront();
             
             if (sOutputFile == "None")
@@ -236,7 +307,7 @@ namespace DataSelector
             {
                 sOutputFile = sOutputFile + ".shp";
             }
-            else if ((sOutputFormat == "Geodatabase") && (blHasExtension || !sOutputFile.Contains(".gdb"))) // It is a geodatabase file and should not have an extension.
+            else if ((sOutputFormat.Contains("Geodatabase")) && (blHasExtension || !sOutputFile.Contains(".gdb"))) // It is a geodatabase file and should not have an extension.
             {
                 MessageBox.Show("Please select a file geodatabase output file");
                 this.Cursor = Cursors.Default;
@@ -255,7 +326,7 @@ namespace DataSelector
 
             string strLayerName = myFileFuncs.GetFileName(sOutputFile);
             
-            if (sOutputFormat != "Geodatabase")
+            if (!sOutputFormat.Contains("Geodatabase"))
             {
                 strLayerName = myFileFuncs.ReturnWithoutExtension(strLayerName);
             }
@@ -275,10 +346,19 @@ namespace DataSelector
             
             // Open ADO connection to database and
             // Run the stored procedure.
+            bool blSuccess = true;
             try
             {
                 dbConn.Open();
                 string strRowsAffect = myCommand.ExecuteNonQuery().ToString();
+                if (blSpatial)
+                {
+                    blSuccess = myADOFuncs.TableHasRows(ref dbConn, strPointFC);
+                    if (!blSuccess)
+                        blSuccess = myADOFuncs.TableHasRows(ref dbConn, strPolyFC);
+                }
+                else
+                    blSuccess = myADOFuncs.TableHasRows(ref dbConn, strTable);
                 dbConn.Close();
             }
             catch (Exception ex)
@@ -291,6 +371,7 @@ namespace DataSelector
                 return;
             }
 
+  
             // convert the results to the designated output file.
             string strPointOutTab = myConfig.GetSDEName() + @"\" + strPointFC;
             string strPolyOutTab = myConfig.GetSDEName() + @"\" + strPolyFC; 
@@ -301,7 +382,7 @@ namespace DataSelector
 
 
             bool blResult = false;
-            if (blSpatial) 
+            if (blSpatial && blSuccess) 
             {
                 // export points and polygons
                 // How is the data to be exported?
@@ -327,12 +408,9 @@ namespace DataSelector
                         this.BringToFront();
                         return;
                     }
-                    // Change field aliases. Note it thinks this has worked, but it hasn't.
-                    blResult = myArcMapFuncs.AlterFieldAliasName(strOutPolys, "SP_GEOMETRY", "Shape");
-                    //MessageBox.Show(blResult.ToString());
-                    myArcMapFuncs.AlterFieldAliasName(strOutPoints, "SP_GEOMETRY", "Shape");
+                    
                 }
-                else if (sOutputFormat == "Shapefile")
+                else if (sOutputFormat == "Shapefile" & blSuccess)
                 {
                     // Create file names first.
                     sOutputFile = myFileFuncs.ReturnWithoutExtension(sOutputFile);
@@ -360,14 +438,20 @@ namespace DataSelector
                 {
                     // Not a spatial export, but it is a spatial layer so there are two files.
                     // Function pulls them back together again.
+
                     blFlatTable = true;
                     string sFinalFile = "";
                     if (sOutputFormat == "dBASE file")
                     {
                         sFinalFile = sOutputFile;
                         sOutputFile = myFileFuncs.GetDirectoryName(sOutputFile) + "\\Temp.csv";
+                        // if schema.ini file exists delete it.
+                        string strIniFile = myFileFuncs.GetDirectoryName(sOutputFile) + "\\schema.ini";
+                        if (myFileFuncs.FileExists(strIniFile))
+                        {
+                            bool blDeleted = myFileFuncs.DeleteFile(strIniFile); // Not checking for success at the moment.
+                        }
                     }
-
                     blResult = myArcMapFuncs.CopyToCSV(strPointOutTab, sOutputFile, true, false, true);
                     if (!blResult)
                     {
@@ -415,7 +499,7 @@ namespace DataSelector
                     }
                 }
             }
-            else
+            else if (blSuccess) // Non-spatial query, successfully run.
             {
                 if (sOutputFormat == "Text file")
                 {
@@ -444,7 +528,30 @@ namespace DataSelector
                     }
                 }
             }
-           
+            else if (!blSuccess)
+            {
+                if (sOutputFormat == "Text file")
+                {
+                    if (sColumnNames == "*")
+                    {
+                        dbConn.Open();
+                        string[] strColumnNames = myADOFuncs.GetFieldNames(ref dbConn, sTableName);
+                        dbConn.Close();
+                        sColumnNames = "";
+                        foreach (string strField in strColumnNames)
+                        {
+                            sColumnNames = sColumnNames + strField + ",";
+                        }
+                        // Remove last comma
+                        sColumnNames = sColumnNames.Substring(0, sColumnNames.Length - 1);
+                        myArcMapFuncs.WriteEmptyCSV(sOutputFile, sColumnNames);
+                        MessageBox.Show("There were no results for the query. An empty text file has been created");
+                    }
+                }
+                else
+                    MessageBox.Show("There were no results for this query. No output has been created");
+            }
+            
             // Delete the temporary tables in the SQL database
             strStoredProcedure = "AFClearSppSubset";
             SqlCommand myCommand2 = myADOFuncs.CreateSQLCommand(ref dbConn, strStoredProcedure, CommandType.StoredProcedure); // Note pass connection by ref here.
@@ -467,14 +574,14 @@ namespace DataSelector
             }
             // Add the results to the screen.
             
-            if (!blFlatTable) // Only truly spatial output has two files.
+            if (!blFlatTable && blSuccess) // Only truly spatial output has two files.
             {
                 ILayer lyrPolys = myArcMapFuncs.GetLayer(strLayerName + "_Poly");
                 ILayer lyrPoints = myArcMapFuncs.GetLayer(strLayerName + "_Point");
                 myArcMapFuncs.MoveToGroupLayer(strLayerName, lyrPolys);
                 myArcMapFuncs.MoveToGroupLayer(strLayerName, lyrPoints);
             }
-            else
+            else if (blSuccess)
             {
                 myArcMapFuncs.ShowTable(strLayerName);
             }
@@ -484,6 +591,12 @@ namespace DataSelector
             if (dlResult == System.Windows.Forms.DialogResult.Yes)
                 this.Close();
             else this.BringToFront();
+
+            // Tidy up
+            myCommand.Dispose();
+            myCommand2.Dispose();
+            dbConn.Dispose();
+
     
         }
 

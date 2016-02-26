@@ -101,16 +101,38 @@ namespace HLArcMapModule
             return pWSF;
         }
 
-        public IFeatureClass GetSDEFeatureClass(string anSDEConnection, string aFeatureClass, bool Messages = false)
+
+        #region FeatureclassExists
+        public bool FeatureclassExists(string aFilePath, string aDatasetName)
         {
-            Type factoryType = Type.GetTypeFromProgID("esriDataSourcesGDB.SdeWorkspaceFactory");
-            IWorkspaceFactory workspaceFactory = (IWorkspaceFactory)Activator.CreateInstance(factoryType);
-            IWorkspace theWS = workspaceFactory.OpenFromFile(anSDEConnection, 0);
-            IFeatureWorkspace theFWS = (IFeatureWorkspace)theWS;
-            IFeatureClass theFC = theFWS.OpenFeatureClass(aFeatureClass);
-            return theFC;
+            
+            if (aDatasetName.Substring(aDatasetName.Length - 4, 1) == ".")
+            {
+                // it's a file.
+                if (myFileFuncs.FileExists(aFilePath + @"\" + aDatasetName))
+                    return true;
+                else
+                    return false;
+            }
+
+            else // it is a geodatabase class.
+            {
+                IWorkspaceFactory pWSF = GetWorkspaceFactory(aFilePath);
+                IWorkspace2 pWS = (IWorkspace2)pWSF.OpenFromFile(aFilePath, 0);
+                if (pWS.get_NameExists(ESRI.ArcGIS.Geodatabase.esriDatasetType.esriDTFeatureClass, aDatasetName))
+                    return true;
+                else
+                    return false;
+            }
         }
 
+        public bool FeatureclassExists(string aFullPath)
+        {
+            return FeatureclassExists(myFileFuncs.GetDirectoryName(aFullPath), myFileFuncs.GetFileName(aFullPath));
+        }
+        #endregion
+
+        #region GetFeatureClass
         public IFeatureClass GetFeatureClass(string aFilePath, string aDatasetName, bool Messages = false)
         // This is incredibly quick.
         {
@@ -129,14 +151,19 @@ namespace HLArcMapModule
 
             IWorkspaceFactory pWSF = GetWorkspaceFactory(aFilePath);
             IFeatureWorkspace pWS = (IFeatureWorkspace)pWSF.OpenFromFile(aFilePath, 0);
-            IFeatureClass pFC = pWS.OpenFeatureClass(aDatasetName);
-            if (pFC == null)
+            if (FeatureclassExists(aFilePath, aDatasetName))
+            {
+                IFeatureClass pFC = pWS.OpenFeatureClass(aDatasetName);
+                return pFC;
+            }
+            else
             {
                 if (Messages) MessageBox.Show("The file " + aDatasetName + " doesn't exist in this location", "Open Feature Class from Disk");
                 return null;
             }
-            return pFC;
+            
         }
+
 
         public IFeatureClass GetFeatureClass(string aFullPath, bool Messages = false)
         {
@@ -145,6 +172,8 @@ namespace HLArcMapModule
             IFeatureClass pFC = GetFeatureClass(aFilePath, aDatasetName, Messages);
             return pFC;
         }
+
+        #endregion
 
         public IFeatureLayer GetFeatureLayerFromString(string aFeatureClassName, bool Messages = false)
         {
@@ -595,6 +624,7 @@ namespace HLArcMapModule
             return true;
         }
 
+        #region RemoveLayer
         public bool RemoveLayer(string aLayerName, bool Messages = false)
         {
             // Check there is input.
@@ -652,6 +682,8 @@ namespace HLArcMapModule
             pMap.DeleteLayer(aLayer);
             return true;
         }
+        #endregion
+
 
         public string GetOutputFileName(string aFileType, string anInitialDirectory = @"C:\")
         {
@@ -687,12 +719,14 @@ namespace HLArcMapModule
             myDialog.Title = "Save Output As...";
             myDialog.ButtonCaption = "OK";
 
+            string strOutFile = "None";
             if (myDialog.DoModalSave(thisApplication.hWnd))
             {
-                string strOutFile = myDialog.FinalLocation.FullName + @"\" + myDialog.Name;
-                return strOutFile;
+                strOutFile = myDialog.FinalLocation.FullName + @"\" + myDialog.Name;
+                
             }
-            else return "None"; // user pressed exit
+            myDialog = null;
+            return strOutFile; // "None" if user pressed exit
             
         }
 
@@ -723,6 +757,7 @@ namespace HLArcMapModule
                 {
                     MessageBox.Show("Process complete");
                 }
+                gp = null;
                 return true;
             }
             catch (Exception ex)
@@ -732,6 +767,7 @@ namespace HLArcMapModule
                     MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     MessageBox.Show(gp.GetMessages(ref sev));
                 }
+                gp = null;
                 return false;
             }
         }
@@ -754,13 +790,7 @@ namespace HLArcMapModule
         {
             // This works absolutely fine for dbf and geodatabase but does not export to CSV.
 
-            // Does the input table have a SP_GEOMETRY field?
-            bool blHasGeometry = false;
-            IField fldCheck = getTableField(InTable, "SP_GEOMETRY");
-            if (fldCheck != null)
-            {
-                blHasGeometry = true;
-            }
+            // Note the csv export already removes ghe geometry field; in this case it is not necessary to check again.
 
             ESRI.ArcGIS.Geoprocessor.Geoprocessor gp = new ESRI.ArcGIS.Geoprocessor.Geoprocessor();
             gp.OverwriteOutput = true;
@@ -784,35 +814,18 @@ namespace HLArcMapModule
                     Thread.Sleep(1000);
                     // Wait for 1 second.
 
-                if (blHasGeometry)
-                {
-                    parameters.Remove(1);
-                    parameters.Remove(0);
-                    parameters.Add(OutTable);
-                    parameters.Add("SP_GEOMETRY");
-                    try
-                    {
-                        myresult = (IGeoProcessorResult)gp.Execute("DeleteField_management", parameters, null);
-                        // Wait until execution completes.
-                        while (myresult.Status == esriJobStatus.esriJobExecuting)
-                            Thread.Sleep(1000);
-                            // Wait for 1 second.     
-                    }
-                    catch (Exception ex)
-                    {
-                        MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        return false;
-                    }
-                }
+                
                 if (Messages)
                 {
                     MessageBox.Show("Process complete");
                 }
+                gp = null;
                 return true;
             }
             catch (Exception ex)
             {
                 MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                gp = null;
                 return false;
             }
         }
@@ -825,11 +838,15 @@ namespace HLArcMapModule
             try
             {
                 myEdit.AlterFieldAliasName(aFieldName, theAliasName);
+                myObject = null;
+                myEdit = null;
                 return true;
             }
             catch (Exception ex)
             {
                 MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                myObject = null;
+                myEdit = null;
                 return false;
             }
         }
@@ -907,11 +924,13 @@ namespace HLArcMapModule
                 {
                     MessageBox.Show("Process complete");
                 }
+                gp = null;
                 return true;
             }
             catch (Exception ex)
             {
                 MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                gp = null;
                 return false;
             }
         }
@@ -919,7 +938,6 @@ namespace HLArcMapModule
         public bool CopyToCSV(string InTable, string OutTable, bool Spatial, bool Append, bool Messages = false)
         {
             // This sub copies the input table to CSV.
-            // For the moment only works with SDE feature classes but will work with any table.
             string aFilePath = myFileFuncs.GetDirectoryName(InTable);
             string aTabName = myFileFuncs.GetFileName(InTable);
             
@@ -927,8 +945,8 @@ namespace HLArcMapModule
             IFields fldsFields = null;
             if (Spatial)
             {
-                // Needs to be made generic - add relevant workspaces if still necessary.
-                IFeatureClass myFC = GetFeatureClass(aFilePath, aTabName, true); //GetSDEFeatureClass(aFilePath, aTabName, true);
+                
+                IFeatureClass myFC = GetFeatureClass(aFilePath, aTabName, true); 
                 myCurs = (ICursor)myFC.Search(null, false);
                 fldsFields = myFC.Fields;
             }
@@ -955,25 +973,26 @@ namespace HLArcMapModule
             string strHeader = "";
             int intFieldCount = fldsFields.FieldCount;
             int intIgnore = -1;
+            
+            // iterate through the fields in the collection to create header.
+            for (int i = 0; i < intFieldCount; i++)
+            {
+                // Get the field at the given index.
+                strField = fldsFields.get_Field(i).Name;
+                if (strField == "SP_GEOMETRY" || strField == "Shape")
+                    intIgnore = i;
+                else
+                    strHeader = strHeader + strField + ",";
+            }
             if (!Append)
             {
-                // iterate through the fields in the collection to create header.
-                for (int i = 0; i < intFieldCount; i++)
-                {
-                    // Get the field at the given index.
-                    strField = fldsFields.get_Field(i).Name;
-                    if (strField == "SP_GEOMETRY")
-                        intIgnore = i;
-                    else
-                        strHeader = strHeader + strField + ",";
-//                        if (i < intFieldCount - 1) strHeader = strHeader + ","; // Only add comma up to second to last one
-                }
                 // Write the header.
                 strHeader = strHeader.Substring(0, strHeader.Length - 1);
                 theOutput.WriteLine(strHeader);
             }
             // Now write the file.
             IRow aRow = myCurs.NextRow();
+            //MessageBox.Show("Writing ...");
             while (aRow != null)
             {
                 string strRow = "";
@@ -994,6 +1013,19 @@ namespace HLArcMapModule
             }
 
             theOutput.Close();
+            theOutput.Dispose();
+            myCurs = null;
+            aRow = null;
+            return true;
+        }
+
+        public bool WriteEmptyCSV(string OutTable, string theHeader)
+        {
+            // Open output file.
+            StreamWriter theOutput = new StreamWriter(OutTable, false);
+            theOutput.Write(theHeader);
+            theOutput.Close();
+            theOutput.Dispose();
             return true;
         }
 

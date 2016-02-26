@@ -29,6 +29,9 @@ namespace HLSelectorToolConfig
         string DefaultSetSymbology;
         string LayerLocation;
         string EnableSpatialPlotting; // do not currently need this but keeping for reference.
+        bool FoundXML;
+        bool LoadedXML;
+
 
         // Initialise component - read XML
         FileFunctions myFileFuncs;
@@ -38,7 +41,8 @@ namespace HLSelectorToolConfig
             // Open xml
             myFileFuncs = new FileFunctions();
             string strXMLFile = null;
-
+            bool blFoundXML = false;
+            LoadedXML = true;
             try
             {
                 // Get the XML file
@@ -58,13 +62,9 @@ namespace HLSelectorToolConfig
                 {
                     Settings.Default.XMLFile = strXMLFile;
                     Settings.Default.Save();
-                    
+                    blFoundXML = true;
                 }
-                else
-                {
-                    MessageBox.Show("XML File not found.");
-                    // Deal with this.
-                }
+
             }
             catch (Exception ex)
             {
@@ -72,130 +72,152 @@ namespace HLSelectorToolConfig
             }
             
             // Read the file.
-            XmlDocument xmlConfig = new XmlDocument();
-            xmlConfig.Load(strXMLFile);
+            if (blFoundXML)
+            {
+                FoundXML = true;
+                XmlDocument xmlConfig = new XmlDocument();
+                xmlConfig.Load(strXMLFile);
 
-            XmlNode currNode = xmlConfig.DocumentElement.FirstChild; // This gets us the DataSelector.
-            xmlDataSelector = (XmlElement)currNode;
+                XmlNode currNode = xmlConfig.DocumentElement.FirstChild; // This gets us the DataSelector.
+                xmlDataSelector = (XmlElement)currNode;
 
-            // Get all of the detail into the object
-            try
-            {
-                LogFilePath = xmlDataSelector["LogFilePath"].InnerText;
+                // Get all of the detail into the object
+                try
+                {
+                    LogFilePath = xmlDataSelector["LogFilePath"].InnerText;
+                }
+                catch
+                {
+                    MessageBox.Show("Could not locate the item 'LogFilePath' in the XML file");
+                    LoadedXML = false;
+                    return;
+                }
+                try
+                {
+                    FileDSN = xmlDataSelector["FileDSN"].InnerText;
+                }
+                catch
+                {
+                    MessageBox.Show("Could not locate the item 'FileDSN' in the XML file");
+                    LoadedXML = false;
+                    return;
+                }
+
+                try
+                {
+                    ConnectionString = xmlDataSelector["ConnectionString"].InnerText;
+                }
+                catch
+                {
+                    MessageBox.Show("Could not locate the item 'ConnectionString' in the XML file");
+                    LoadedXML = false;
+                    return;
+                }
+                try
+                {
+                    DefaultExtractPath = xmlDataSelector["DefaultExtractPath"].InnerText;
+                }
+                catch
+                {
+                    MessageBox.Show("Could not locate the item 'DefaultExtractPath' in the XML file");
+                    LoadedXML = false;
+                    return;
+                }
+                try
+                {
+                    DefaultQueryPath = xmlDataSelector["DefaultQueryPath"].InnerText;
+                }
+                catch
+                {
+                    MessageBox.Show("Could not locate the item 'DefaultQueryPath' in the XML file");
+                    LoadedXML = false;
+                    return;
+                }
+                try
+                {
+                    DefaultFormat = xmlDataSelector["DefaultFormat"].InnerText;
+                }
+                catch
+                {
+                    MessageBox.Show("Could not locate the item 'DefaultFormat' in the XML file");
+                    LoadedXML = false;
+                    return;
+                }
+                try
+                {
+                    DatabaseSchema = xmlDataSelector["DatabaseSchema"].InnerText;
+                }
+                catch
+                {
+                    MessageBox.Show("Could not locate the item 'DatabaseSchema' in the XML file");
+                    LoadedXML = false;
+                    return;
+                }
+                try
+                {
+                    IncludeWildcard = xmlDataSelector["IncludeWildcard"].InnerText;
+                }
+                catch
+                {
+                    MessageBox.Show("Could not locate the item 'IncludeWildcard' in the XML file");
+                    LoadedXML = false;
+                    return;
+                }
+                try
+                {
+                    ExcludeWildcard = xmlDataSelector["ExcludeWildcard"].InnerText;
+                }
+                catch
+                {
+                    MessageBox.Show("Could not locate the item 'ExcludeWildcard' in the XML file");
+                    LoadedXML = false;
+                    return;
+                }
+                try
+                {
+                    RecMax = xmlDataSelector["RecMax"].InnerText;
+                }
+                catch
+                {
+                    MessageBox.Show("Could not locate the item 'RecMax' in the XML file");
+                    LoadedXML = false;
+                    return;
+                }
+                try
+                {
+                    DefaultSetSymbology = xmlDataSelector["DefaultSetSymbology"].InnerText;
+                }
+                catch
+                {
+                    MessageBox.Show("Could not locate the item 'DefaultSetSymbology' in the XML file");
+                    LoadedXML = false;
+                    return;
+                }
+                try
+                {
+                    LayerLocation = xmlDataSelector["LayerLocation"].InnerText;
+                }
+                catch
+                {
+                    MessageBox.Show("Could not locate the item 'LayerLocation' in the XML file");
+                    LoadedXML = false;
+                    return;
+                }
+                try
+                {
+                    EnableSpatialPlotting = xmlDataSelector["EnableSpatialPlotting"].InnerText;
+                }
+                catch
+                {
+                    MessageBox.Show("Could not locate the item 'EnableSpatialPlotting' in the XML file");
+                    LoadedXML = false;
+                }
             }
-            catch 
+            else
             {
-                MessageBox.Show("Could not locate the item 'LogFilePath' in the XML file");
-                return;
-            }
-            try
-            {
-                FileDSN = xmlDataSelector["FileDSN"].InnerText;
-            }
-            catch 
-            {
-                MessageBox.Show("Could not locate the item 'FileDSN' in the XML file");
-                return;
+                FoundXML = false; // this has to be checked first; all other properties are empty.
             }
 
-            try
-            {
-                ConnectionString = xmlDataSelector["ConnectionString"].InnerText;
-            }
-            catch 
-            {
-                MessageBox.Show("Could not locate the item 'ConnectionString' in the XML file");
-                return;
-            }
-            try
-            {
-                DefaultExtractPath = xmlDataSelector["DefaultExtractPath"].InnerText;
-            }
-            catch 
-            {
-                MessageBox.Show("Could not locate the item 'DefaultExtractPath' in the XML file");
-                return;
-            }
-            try
-            {
-                DefaultQueryPath = xmlDataSelector["DefaultQueryPath"].InnerText;
-            }
-            catch 
-            {
-                MessageBox.Show("Could not locate the item 'DefaultQueryPath' in the XML file");
-                return;
-            }
-            try
-            {
-                DefaultFormat = xmlDataSelector["DefaultFormat"].InnerText;
-            }
-            catch 
-            {
-                MessageBox.Show("Could not locate the item 'DefaultFormat' in the XML file");
-                return;
-            }
-            try
-            {
-                DatabaseSchema = xmlDataSelector["DatabaseSchema"].InnerText;
-            }
-            catch 
-            {
-                MessageBox.Show("Could not locate the item 'DatabaseSchema' in the XML file");
-                return;
-            }
-            try
-            {
-                IncludeWildcard = xmlDataSelector["IncludeWildcard"].InnerText;
-            }
-            catch 
-            {
-                MessageBox.Show("Could not locate the item 'IncludeWildcard' in the XML file");
-                return;
-            }
-            try
-            {
-                ExcludeWildcard = xmlDataSelector["ExcludeWildcard"].InnerText;
-            }
-            catch 
-            {
-                MessageBox.Show("Could not locate the item 'ExcludeWildcard' in the XML file");
-                return;
-            }
-            try
-            {
-                RecMax = xmlDataSelector["RecMax"].InnerText;
-            }
-            catch 
-            {
-                MessageBox.Show("Could not locate the item 'RecMax' in the XML file");
-                return;
-            }
-            try
-            {
-                DefaultSetSymbology = xmlDataSelector["DefaultSetSymbology"].InnerText;
-            }
-            catch 
-            {
-                MessageBox.Show("Could not locate the item 'DefaultSetSymbology' in the XML file");
-                return;
-            }
-            try
-            {
-                LayerLocation = xmlDataSelector["LayerLocation"].InnerText;
-            }
-            catch 
-            {
-                MessageBox.Show("Could not locate the item 'LayerLocation' in the XML file");
-                return;
-            }
-            try
-            {
-                EnableSpatialPlotting = xmlDataSelector["EnableSpatialPlotting"].InnerText;
-            }
-            catch
-            {
-                MessageBox.Show("Could not locate the item 'EnableSpatialPlotting' in the XML file");
-            }
         }
         private string GetConfigFilePath()
         {
@@ -217,6 +239,16 @@ namespace HLSelectorToolConfig
         }
 
         // Functions to return each element under here.
+        public bool GetFoundXML()
+        {
+            return FoundXML;
+        }
+
+        public bool GetLoadedXML()
+        {
+            return LoadedXML;
+        }
+
         public string GetSDEName()
         {
             return FileDSN;

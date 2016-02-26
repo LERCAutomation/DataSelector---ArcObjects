@@ -28,6 +28,7 @@ namespace HLFileFunctions
             return aPath;
         }
 
+        #region FileExists
         public bool FileExists(string aFilePath, string aFileName)
         {
             if (DirExists(aFilePath))
@@ -57,6 +58,8 @@ namespace HLFileFunctions
             return false;
         }
 
+        #endregion
+
         public string GetFileName(string aFullPath)
         {
             // Check input.
@@ -78,6 +81,20 @@ namespace HLFileFunctions
             if (aTest != ".") return aFileName;
 
             return aFileName.Substring(0, aLen - 4);
+        }
+
+        public bool DeleteFile(string aFullPath)
+        {
+            try
+            {
+                File.Delete(aFullPath);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+
         }
 
     }

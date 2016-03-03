@@ -93,29 +93,53 @@ namespace DataSelector
 
         private void btnSave_Click(object sender, EventArgs e)
         {
-            // Save as dialog appears.
+            // Pull up Save As dialog.
             SaveFileDialog saveFileDialog1 = new SaveFileDialog();
 
-            saveFileDialog1.Filter = "Query files (*.qry)|*.qry";
-            //saveFileDialog1.FilterIndex = 2;
-            saveFileDialog1.RestoreDirectory = true;
+            saveFileDialog1.Filter = "Query files (*.qsf)|*.qsf";
+            saveFileDialog1.InitialDirectory = myConfig.GetDefaultQueryPath();
 
-            string strFileName;
-            if (saveFileDialog1.ShowDialog() == DialogResult.OK)
+            bool blDone = false;
+            string strFileName = "";
+            while (blDone == false)
             {
-                strFileName = saveFileDialog1.FileName;
-                // Check if file exists
-                if (File.Exists(strFileName))
+                if (saveFileDialog1.ShowDialog() == DialogResult.OK)
                 {
-                    File.Delete(strFileName);
+                    strFileName = saveFileDialog1.FileName;
+
+                    string strExtension = strFileName.Substring(strFileName.Length - 4, 4);
+                    if (strExtension.Substring(0, 1) != ".")
+                        strFileName = strFileName + ".qsf";
+                    else if (strExtension != ".qsf") // Wrong extension.
+                    {
+                        MessageBox.Show("File name has incorrect extension. Save cancelled");
+                        return;
+                    }
+                    blDone = true; // New file
+
                 }
-                StreamWriter qryFile = File.CreateText(strFileName);
-                // Write query
-                qryFile.WriteLine("This is a test");
-                qryFile.Close();
-                MessageBox.Show("Query file saved");
+                else // User pressed Cancel
+                {
+                    MessageBox.Show("Please select an output file");
+                    return;
+                }
+                
             }
-            
+            StreamWriter qryFile = File.CreateText(strFileName);
+            // Write query
+
+            string strColumns = "Fields {" + txtColumns.Text.Replace("\r\n", "$$")  + "}";
+            string strWhere = "Where {" + txtWhere.Text.Replace("\r\n", "$$") + "}";
+            string strGroupBy = "Group By {" + txtGroupBy.Text.Replace("\r\n", "$$")  + "}";
+            string strOrderBy = "Order By {" + txtOrderBy.Text.Replace("\r\n", "$$") + "}";
+            qryFile.WriteLine(strColumns);
+            qryFile.WriteLine(strWhere);
+            qryFile.WriteLine(strGroupBy);
+            qryFile.WriteLine(strOrderBy);
+            qryFile.Close();
+            qryFile.Dispose();
+            MessageBox.Show("Query file saved");
+
         }
 
         private void btnLoad_Click(object sender, EventArgs e)
@@ -123,8 +147,8 @@ namespace DataSelector
             // Open file dialog appears
             OpenFileDialog openFileDialog1 = new OpenFileDialog();
 
-            openFileDialog1.Filter = "Query files (*.qry)|*.qry";
-            openFileDialog1.RestoreDirectory = true;
+            openFileDialog1.Filter = "Query files (*.qsf)|*.qsf";
+            openFileDialog1.InitialDirectory = myConfig.GetDefaultQueryPath();
 
             string strFileName;
             if (openFileDialog1.ShowDialog() == DialogResult.OK)
@@ -132,13 +156,33 @@ namespace DataSelector
                 strFileName = openFileDialog1.FileName;
                 StreamReader qryFile = new StreamReader(strFileName);
                 // read query
-                string qryLine;
-                string allInfo = "The file contains the following info: ";
+                string qryLine = "";
                 while ((qryLine = qryFile.ReadLine()) != null)
                 {
-                    allInfo = allInfo + qryLine;
+                    if (qryLine.Substring(0,8).ToUpper() == "FIELDS {" && qryLine.ToUpper() != "FIELDS {}")
+                    {
+                        qryLine = qryLine.Substring(8, qryLine.Length - 9);
+                        txtColumns.Text = qryLine.Replace("$$", "\r\n");
+                    }
+                    if (qryLine.Substring(0, 7).ToUpper() == "WHERE {" && qryLine.ToUpper() != "WHERE {}")
+                    {
+                        qryLine = qryLine.Substring(7, qryLine.Length - 8);
+                        txtWhere.Text = qryLine.Replace("$$", "\r\n");
+                    }
+                    if (qryLine.Substring(0, 10).ToUpper() == "GROUP BY {" && qryLine.ToUpper() != "GROUP BY {}")
+                    {
+                        qryLine = qryLine.Substring(10, qryLine.Length - 11);
+                        txtGroupBy.Text = qryLine.Replace("$$", "\r\n");
+                    }
+                    if (qryLine.Substring(0, 10).ToUpper() == "ORDER BY {" && qryLine.ToUpper() != "ORDER BY {}")
+                    {
+                        qryLine = qryLine.Substring(10, qryLine.Length - 11);
+                        txtOrderBy.Text = qryLine.Replace("$$", "\r\n");
+                    }
                 }
-                txtColumns.Text = allInfo;
+                qryFile.Close();
+                qryFile.Dispose();
+                
             }
             
 
@@ -146,7 +190,6 @@ namespace DataSelector
 
         private void btnOK_Click(object sender, EventArgs e)
         {
-
             this.Cursor = Cursors.WaitCursor;
             IApplication theApplication = (IApplication)ArcMap.Application;
             ArcMapFunctions myArcMapFuncs = new ArcMapFunctions(theApplication);
@@ -161,13 +204,31 @@ namespace DataSelector
             string sOutputFormat = cmbOutFormat.Text;
             string sOutputFile;
             string sUserID = Environment.UserName;
-            
+
+            string strLogFile = myConfig.GetLogFilePath() + @"\DataSelector_" + sUserID + ".log";
+            if (chkLogFile.Checked)
+            {
+                bool blDeleted = myFileFuncs.DeleteFile(strLogFile);
+                if (!blDeleted)
+                {
+                    MessageBox.Show("Cannot delete log file. Please make sure it is not open in another window");
+                    return;
+                }
+                myFileFuncs.CreateLogFile(strLogFile);
+            }
+            myFileFuncs.WriteLine(strLogFile, "-----------------------------------------------------------------------");
+            myFileFuncs.WriteLine(strLogFile, "Process started");
+            myFileFuncs.WriteLine(strLogFile, "-----------------------------------------------------------------------");
+
+
             // Do some basic checks and fix as required.
             // User ID should be something at least
             if (string.IsNullOrEmpty(sUserID))
             {
                 sUserID = "Temp";
             }
+            myFileFuncs.WriteLine(strLogFile, "User ID is " + sUserID);
+
 
             if (string.IsNullOrEmpty(sColumnNames))
             {
@@ -185,6 +246,8 @@ namespace DataSelector
                 this.Cursor = Cursors.Default;
                 return;
             }
+
+            myFileFuncs.WriteLine(strLogFile, "Table name is " + sTableName);
 
             SqlConnection dbConn = myADOFuncs.CreateSQLConnection(myConfig.GetConnectionString());
             
@@ -273,6 +336,7 @@ namespace DataSelector
                 }
                 else
                     blDone = true; // user pressed cancel.
+
 
                 if (blSpatial && blDone != true)
                 {
@@ -374,7 +438,13 @@ namespace DataSelector
             }
             this.Focus();
 
+            myFileFuncs.WriteLine(strLogFile, "Output format is " + sOutputFormat);
+            myFileFuncs.WriteLine(strLogFile, "Output file is " + sOutputFile);
+            myFileFuncs.WriteLine(strLogFile, "Note that spatial output (Shapefile, Geodatabase) is split into _point and _poly components");
 
+            ////////////////////////////////////////////////////// INPUT ALL CHECKED AND OK, START PROCESS ////////////////////////////////////////////////////////
+
+            
             string strLayerName = myFileFuncs.GetFileName(sOutputFile);
             
             if (!sOutputFormat.Contains("Geodatabase"))
@@ -394,13 +464,25 @@ namespace DataSelector
             myADOFuncs.AddSQLParameter(ref myCommand, "OrderByClause", sOrderClause);
             myADOFuncs.AddSQLParameter(ref myCommand, "UserID", sUserID);
             myADOFuncs.AddSQLParameter(ref myCommand, "Split", strSplit);
-            
+
+            myFileFuncs.WriteLine(strLogFile, "Database schema is " + sDefaultSchema);
+            myFileFuncs.WriteLine(strLogFile, "Species table is " + sTableName);
+            myFileFuncs.WriteLine(strLogFile, "Column names are " + sColumnNames.Replace("\r\n", " "));
+            myFileFuncs.WriteLine(strLogFile, "Where clause is " + sWhereClause.Replace("\r\n", " "));
+            myFileFuncs.WriteLine(strLogFile, "Group by clause is " + sGroupClause.Replace("\r\n", " "));
+            myFileFuncs.WriteLine(strLogFile, "Order by clause is " + sOrderClause.Replace("\r\n", " "));
+            myFileFuncs.WriteLine(strLogFile, "Split is " + strSplit);
+            myFileFuncs.WriteLine(strLogFile, "Note that Split is 1 for spatial data, 0 for non-spatial queries");
+
+
             // Open SQL connection to database and
             // Run the stored procedure.
             bool blSuccess = true;
             try
             {
+                myFileFuncs.WriteLine(strLogFile, "Opening SQL Connection");
                 dbConn.Open();
+                myFileFuncs.WriteLine(strLogFile, "Executing stored procedure");
                 string strRowsAffect = myCommand.ExecuteNonQuery().ToString();
                 if (blSpatial)
                 {
@@ -410,11 +492,14 @@ namespace DataSelector
                 }
                 else
                     blSuccess = myADOFuncs.TableHasRows(ref dbConn, strTable);
+                myFileFuncs.WriteLine(strLogFile, "Closing SQL Connection");
                 dbConn.Close();
             }
             catch (Exception ex)
             {
                 MessageBox.Show("Could not execute stored procedure. System returned the following message: " +
+                    ex.Message);
+                myFileFuncs.WriteLine(strLogFile, "Could not execute stored procedure. System returned the following message: " +
                     ex.Message);
                 this.Cursor = Cursors.Default;
                 this.BringToFront();
@@ -442,19 +527,23 @@ namespace DataSelector
                     // Easy, export without further ado.
                     strOutPoints = sOutputFile + "_Point";
                     strOutPolys = sOutputFile + "_Poly";
-                    
+
+                    myFileFuncs.WriteLine(strLogFile, "Copying point results to point geodatabase file");
                     blResult = myArcMapFuncs.CopyFeatures(strPointOutTab, strOutPoints);
                     if (!blResult)
                     {
                         MessageBox.Show("Error exporting point geodatabase file");
+                        myFileFuncs.WriteLine(strLogFile, "Error exporting point geodatabase file");
                         this.Cursor = Cursors.Default;
                         this.BringToFront();
                         return;
                     }
                     blResult = myArcMapFuncs.CopyFeatures(strPolyOutTab, strOutPolys);
+                    myFileFuncs.WriteLine(strLogFile, "Copying polygon results to polygon geodatabase file");
                     if (!blResult)
                     {
                         MessageBox.Show("Error exporting polygon geodatabase file");
+                        myFileFuncs.WriteLine(strLogFile, "Error exporting polygon geodatabase file");
                         this.Cursor = Cursors.Default;
                         this.BringToFront();
                         return;
@@ -467,19 +556,23 @@ namespace DataSelector
                     sOutputFile = myFileFuncs.ReturnWithoutExtension(sOutputFile);
                     strOutPoints = sOutputFile + "_Point.shp";
                     strOutPolys = sOutputFile + "_Poly.shp";
-                    
+
+                    myFileFuncs.WriteLine(strLogFile, "Copying point results to point shapefile");
                     blResult = myArcMapFuncs.CopyFeatures(strPointOutTab, strOutPoints);
                     if (!blResult)
                     {
                         MessageBox.Show("Error exporting point shapefile");
+                        myFileFuncs.WriteLine(strLogFile, "Error exporting point shapefile");
                         this.Cursor = Cursors.Default;
                         this.BringToFront();
                         return;
                     }
+                    myFileFuncs.WriteLine(strLogFile, "Copying polygon results to polygon shapefile");
                     blResult = myArcMapFuncs.CopyFeatures(strPolyOutTab, strOutPolys);
                     if (!blResult)
                     {
                         MessageBox.Show("Error exporting polygon shapefile");
+                        myFileFuncs.WriteLine(strLogFile, "Error exporting polygon shapefile");
                         this.Cursor = Cursors.Default;
                         this.BringToFront();
                         return;
@@ -504,19 +597,23 @@ namespace DataSelector
                         sFinalFile = sOutputFile;
                         sOutputFile = myFileFuncs.GetDirectoryName(sOutputFile) + "\\Temp.csv";
                     }
+                    myFileFuncs.WriteLine(strLogFile, "Copying point results to text file");
                     blResult = myArcMapFuncs.CopyToCSV(strPointOutTab, sOutputFile, true, false, true);
                     if (!blResult)
                     {
                         MessageBox.Show("Error exporting output table to text file " + sOutputFile);
+                        myFileFuncs.WriteLine(strLogFile, "Error exporting output table to text file " + sOutputFile);
                         this.Cursor = Cursors.Default;
                         this.BringToFront();
                         return;
                     }
                     // Also export the second table - append
+                    myFileFuncs.WriteLine(strLogFile, "Appending polygon results to text file");
                     blResult = myArcMapFuncs.CopyToCSV(strPolyOutTab, sOutputFile, true, true, true);
                     if (!blResult)
                     {
                         MessageBox.Show("Error appending output table to text file " + sOutputFile);
+                        myFileFuncs.WriteLine(strLogFile, "Error appending output table to text file " + sOutputFile);
                         this.Cursor = Cursors.Default;
                         this.BringToFront();
                     }
@@ -524,21 +621,25 @@ namespace DataSelector
                     // If the end output is a dBASE file, export the resulting csv to dBASE.
                     if (sOutputFormat == "dBASE file")
                     {
+                        myFileFuncs.WriteLine(strLogFile, "Converting text file to dBASE file");
                         blResult = myArcMapFuncs.CopyTable(sOutputFile, sFinalFile);
                         // Delete csv file.
                         try
                         {
+                            myFileFuncs.WriteLine(strLogFile, "Deleting temporary text file");
                             File.Delete(sOutputFile);
                         }
                         catch (Exception ex)
                         {
                             MessageBox.Show("Error deleting temporary text file: " + ex.Message);
+                            myFileFuncs.WriteLine(strLogFile, "Error deleting temporary text file: " + ex.Message);
                             this.Cursor = Cursors.Default;
                             this.BringToFront();
                         }
                         if (!blResult)
                         {
                             MessageBox.Show("Error exporting output table to dBASE file " + sFinalFile);
+                            myFileFuncs.WriteLine(strLogFile, "Error exporting output table to dBASE file " + sFinalFile);
                             this.Cursor = Cursors.Default;
                             this.BringToFront();
                             return;
@@ -547,6 +648,7 @@ namespace DataSelector
                     }
                     else
                     {
+                        myFileFuncs.WriteLine(strLogFile, "Adding output to ArcMap view");
                         myArcMapFuncs.AddTableLayerFromString(sOutputFile, strLayerName);
                     }
                 }
@@ -556,14 +658,17 @@ namespace DataSelector
                 if (sOutputFormat == "Text file")
                 {
                     // We are exporting a non-spatial output to text file.
+                    myFileFuncs.WriteLine(strLogFile, "Copying results to text file");
                     blResult = myArcMapFuncs.CopyToCSV(strOutTab, sOutputFile, false, false, true);
                     if (!blResult)
                     {
                         MessageBox.Show("Error exporting output table to text file " + sOutputFile);
+                        myFileFuncs.WriteLine(strLogFile, "Error exporting output table to text file " + sOutputFile);
                         this.Cursor = Cursors.Default;
                         this.BringToFront();
                         return;
                     }
+                    myFileFuncs.WriteLine(strLogFile, "Adding output to ArcMap view");
                     myArcMapFuncs.AddTableLayerFromString(sOutputFile, strLayerName);
                 }
                 else
@@ -573,6 +678,7 @@ namespace DataSelector
                     if (!blResult)
                     {
                         MessageBox.Show("Error exporting output table");
+                        myFileFuncs.WriteLine(strLogFile, "Error exporting output table");
                         this.Cursor = Cursors.Default;
                         this.BringToFront();
                         return;
@@ -597,10 +703,14 @@ namespace DataSelector
                         sColumnNames = sColumnNames.Substring(0, sColumnNames.Length - 1);
                         myArcMapFuncs.WriteEmptyCSV(sOutputFile, sColumnNames);
                         MessageBox.Show("There were no results for the query. An empty text file has been created");
+                        myFileFuncs.WriteLine(strLogFile, "There were no results for the query. An empty text file has been created");
                     }
                 }
                 else
+                {
                     MessageBox.Show("There were no results for this query. No output has been created");
+                    myFileFuncs.WriteLine(strLogFile, "There were no results for the query. No output has been created");
+                }
             }
             
             // Delete the temporary tables in the SQL database
@@ -611,13 +721,18 @@ namespace DataSelector
             myADOFuncs.AddSQLParameter(ref myCommand2, "UserId", sUserID);
             try
             {
+                myFileFuncs.WriteLine(strLogFile, "Opening SQL connection");
                 dbConn.Open();
+                myFileFuncs.WriteLine(strLogFile, "Deleting temporary tables");
                 string strRowsAffect = myCommand2.ExecuteNonQuery().ToString();
+                myFileFuncs.WriteLine(strLogFile, "Closing SQL connection");
                 dbConn.Close();
             }
             catch (Exception ex)
             {
                 MessageBox.Show("Could not execute stored procedure. System returned the following message: " +
+                    ex.Message);
+                myFileFuncs.WriteLine(strLogFile, "Could not execute stored procedure. System returned the following message: " +
                     ex.Message);
                 this.Cursor = Cursors.Default;
                 this.BringToFront();
@@ -627,6 +742,7 @@ namespace DataSelector
             
             if (!blFlatTable && blSuccess) // Only truly spatial output has two files.
             {
+                myFileFuncs.WriteLine(strLogFile, "Adding output to ArcMap project in group layer " + strLayerName);
                 ILayer lyrPolys = myArcMapFuncs.GetLayer(strLayerName + "_Poly");
                 ILayer lyrPoints = myArcMapFuncs.GetLayer(strLayerName + "_Point");
                 myArcMapFuncs.MoveToGroupLayer(strLayerName, lyrPolys);
@@ -634,9 +750,14 @@ namespace DataSelector
             }
             else if (blSuccess)
             {
+                myFileFuncs.WriteLine(strLogFile, "Showing table output on screen");
                 myArcMapFuncs.ShowTable(strLayerName);
             }
-            
+
+            myFileFuncs.WriteLine(strLogFile, "---------------------------------------------------------------------------");
+            myFileFuncs.WriteLine(strLogFile, "Process complete");
+            myFileFuncs.WriteLine(strLogFile, "---------------------------------------------------------------------------");
+
             this.Cursor = Cursors.Default;
             DialogResult dlResult = MessageBox.Show("Process complete. Do you wish to close the form?", "Data Selector", MessageBoxButtons.YesNo);
             if (dlResult == System.Windows.Forms.DialogResult.Yes)

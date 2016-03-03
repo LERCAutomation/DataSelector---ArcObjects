@@ -85,17 +85,41 @@ namespace HLFileFunctions
 
         public bool DeleteFile(string aFullPath)
         {
-            try
+            if (FileExists(aFullPath))
             {
-                File.Delete(aFullPath);
+                try
+                {
+                    File.Delete(aFullPath);
+                    return true;
+                }
+                catch
+                {
+                    return false;
+                }
+            }
+            else
                 return true;
-            }
-            catch
-            {
-                return false;
-            }
 
         }
 
+        public bool CreateLogFile(string aTextFile)
+        {
+            StreamWriter myWriter = new StreamWriter(aTextFile, false);
+
+            myWriter.WriteLine("Log file for Data Selector, started on " + DateTime.Now.ToString());
+            myWriter.Close();
+            myWriter.Dispose();
+            return true;
+        }
+
+        public bool WriteLine(string aTextFile, string aWriteLine)
+        {
+            StreamWriter myWriter = new StreamWriter(aTextFile, true);
+            aWriteLine = DateTime.Now.ToString() + " : " + aWriteLine;
+            myWriter.WriteLine(aWriteLine);
+            myWriter.Close();
+            myWriter.Dispose();
+            return true;
+        }
     }
 }

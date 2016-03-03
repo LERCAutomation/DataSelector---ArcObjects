@@ -114,7 +114,12 @@ namespace HLArcMapModule
                 else
                     return false;
             }
-
+            else if (aFilePath.Substring(aFilePath.Length - 3, 3) == "sde")
+            {
+                // It's an SDE class
+                // Not handled. We know the table exists.
+                return true;
+            }
             else // it is a geodatabase class.
             {
                 IWorkspaceFactory pWSF = GetWorkspaceFactory(aFilePath);
@@ -356,6 +361,41 @@ namespace HLArcMapModule
             }
         }
 
+        #region TableExists
+        public bool TableExists(string aFilePath, string aDatasetName)
+        {
+
+            if (aDatasetName.Substring(aDatasetName.Length - 4, 1) == ".")
+            {
+                // it's a file.
+                if (myFileFuncs.FileExists(aFilePath + @"\" + aDatasetName))
+                    return true;
+                else
+                    return false;
+            }
+            else if (aFilePath.Substring(aFilePath.Length - 3, 3) == "sde")
+            {
+                // It's an SDE class
+                // Not handled. We know the table exists.
+                return true;
+            }
+            else // it is a geodatabase class.
+            {
+                IWorkspaceFactory pWSF = GetWorkspaceFactory(aFilePath);
+                IWorkspace2 pWS = (IWorkspace2)pWSF.OpenFromFile(aFilePath, 0);
+                if (pWS.get_NameExists(ESRI.ArcGIS.Geodatabase.esriDatasetType .esriDTTable, aDatasetName))
+                    return true;
+                else
+                    return false;
+            }
+        }
+
+        public bool TableExists(string aFullPath)
+        {
+            return TableExists(myFileFuncs.GetDirectoryName(aFullPath), myFileFuncs.GetFileName(aFullPath));
+        }
+        #endregion
+
         #region GetTable
         public ITable GetTable(string aFilePath, string aDatasetName, bool Messages = false)
         {
@@ -474,14 +514,97 @@ namespace HLArcMapModule
             }
             IStandaloneTableCollection pStandaloneTableCollection = (IStandaloneTableCollection)pMap;
             IStandaloneTable pTable = new StandaloneTable();
+            IMxDocument mxDoc = GetIMXDocument();
+
             pTable.Table = theTable;
             pTable.Name = aName;
 
-            IMxDocument mxDoc = GetIMXDocument();
+            // Remove if already exists
+            if (TableLayerExists(aName))
+                RemoveStandaloneTable(aName);
+
+            mxDoc.UpdateContents();
+            
             pStandaloneTableCollection.AddStandaloneTable(pTable);
             mxDoc.UpdateContents();
             return true;
         }
+
+        public bool TableLayerExists(string aLayerName, bool Messages = false)
+        {
+            // Check there is input.
+            if (aLayerName == null)
+            {
+                if (Messages) MessageBox.Show("Please pass a valid layer name", "Find Layer By Name");
+                return false;
+            }
+
+            // Get map, and layer names.
+            IMxDocument mxDoc = GetIMXDocument();
+            IMap pMap = GetMap();
+            if (pMap == null)
+            {
+                if (Messages) MessageBox.Show("No map found", "Find Layer By Name");
+                return false;
+            }
+
+            IStandaloneTableCollection pColl = (IStandaloneTableCollection)pMap;
+            IStandaloneTable pThisTable = null;
+            for (int I = 0; I < pColl.StandaloneTableCount; I++)
+            {
+                pThisTable = pColl.StandaloneTable[I];
+                if (pThisTable.Name == aLayerName)
+                {
+                    return true;
+                    //pColl.RemoveStandaloneTable(pThisTable);
+                   // mxDoc.UpdateContents();
+                    //break; // important: get out now, the index is no longer valid
+                }
+            }
+            return false;
+        }
+
+        public bool RemoveStandaloneTable(string aTableName, bool Messages = false)
+        {
+            // Check there is input.
+            if (aTableName == null)
+            {
+                if (Messages) MessageBox.Show("Please pass a valid layer name", "Find Layer By Name");
+                return false;
+            }
+
+            // Get map, and layer names.
+            IMxDocument mxDoc = GetIMXDocument();
+            IMap pMap = GetMap();
+            if (pMap == null)
+            {
+                if (Messages) MessageBox.Show("No map found", "Find Layer By Name");
+                return false;
+            }
+
+            IStandaloneTableCollection pColl = (IStandaloneTableCollection)pMap;
+            IStandaloneTable pThisTable = null;
+            for (int I = 0; I < pColl.StandaloneTableCount; I++)
+            {
+                pThisTable = pColl.StandaloneTable[I];
+                if (pThisTable.Name == aTableName)
+                {
+                    try
+                    {
+                        pColl.RemoveStandaloneTable(pThisTable);
+                        mxDoc.UpdateContents();
+                        return true; // important: get out now, the index is no longer valid
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        return false;
+                    }
+                }
+            }
+            return false;
+        }
+
 
         public bool LayerExists(string aLayerName, bool Messages = false)
         {
@@ -676,7 +799,7 @@ namespace HLArcMapModule
             IMap pMap = GetMap();
             if (pMap == null)
             {
-                if (Messages) MessageBox.Show("No map found", "Find Layer By Name");
+                if (Messages) MessageBox.Show("No map found", "Remove Layer");
                 return false;
             }
             pMap.DeleteLayer(aLayer);

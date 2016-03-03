@@ -236,36 +236,72 @@ namespace DataSelector
             while (!blDone)
             {
                 sOutputFile = myArcMapFuncs.GetOutputFileName(sOutputFormat, myConfig.GetDefaultExtractPath());
-                if (blSpatial)
+                if (sOutputFile != "None")
                 {
-                    // Check if the outputfile_point or outputfile_poly already exists.
-                    if (sOutputFile != "None")
+                    // firstly check extensions are as should be.
+                    string strExtensionTest = sOutputFile.Substring(sOutputFile.Length - 4, 4).Substring(0, 1);
+                    Boolean blHasExtension = false;
+                    if (strExtensionTest == ".") blHasExtension = true;
+
+                    // if there isn't, put one one.
+                    if (sOutputFormat == "Text file" && !blHasExtension)
                     {
-                        
-                        string sTest1 = "";
-                        string sTest2 = "";
-                        if (sOutputFormat.Contains("Geodatabase"))
-                        {
-                            MessageBox.Show("Testing");
-                            sTest1 = sOutputFile + "_Point";
-                            sTest2 = sOutputFile + "_Poly";
+                        sOutputFile = sOutputFile + ".csv";
+                    }
+                    else if (sOutputFormat == "dBASE file" && !blHasExtension)
+                    {
+                        sOutputFile = sOutputFile + ".dbf";
+                    }
+                    else if (sOutputFormat == "Shapefile" && !blHasExtension)
+                    {
+                        sOutputFile = sOutputFile + ".shp";
+                    }
+                    else if ((sOutputFormat.Contains("Geodatabase")) && (blHasExtension || !sOutputFile.Contains(".gdb"))) // It is a geodatabase file and should not have an extension.
+                    {
+                        MessageBox.Show("Please select a file geodatabase output file");
+                        this.Cursor = Cursors.Default;
+                        this.BringToFront();
+                        return;
+                    }
+                    else if ((!sOutputFormat.Contains("Geodatabase")) && (sOutputFile.Contains(".gdb"))) // Trying to store a non-geoDB in a gdb
+                    {
+                        MessageBox.Show("Cannot store " + sOutputFormat + " inside a geodatabase. Please choose a different output location");
+                        this.Cursor = Cursors.Default;
+                        this.BringToFront();
+                        return;
+                    }
+                }
+                else
+                    blDone = true; // user pressed cancel.
 
-                        }
-                        else if (sOutputFormat == "Shapefile")
-                        {
-                            string strExtensionTest1 = sOutputFile.Substring(sOutputFile.Length - 4, 4).Substring(0, 1);
-                            if (strExtensionTest1 == ".")
-                            {
-                                sTest1 = sOutputFile.Substring(0, sOutputFile.Length - 4) + "_Point.shp";
-                                sTest2 = sOutputFile.Substring(0, sOutputFile.Length - 4) + "_Poly.shp";
-                            }
-                            else
-                            {
-                                sTest1 = sOutputFile + "_Point.shp";
-                                sTest2 = sOutputFile + "_Poly.shp";
-                            }
-                        }
+                if (blSpatial && blDone != true)
+                {
+                    // Check if the outputfile_point or outputfile_poly already exists. For dBase and text output the dialog does its own check.
 
+                    string sTest1 = "";
+                    string sTest2 = "";
+                    if (sOutputFormat.Contains("Geodatabase"))
+                    {
+                        sTest1 = sOutputFile + "_Point";
+                        sTest2 = sOutputFile + "_Poly";
+
+                    }
+                    else if (sOutputFormat == "Shapefile")
+                    {
+                        string strExtensionTest1 = sOutputFile.Substring(sOutputFile.Length - 4, 4).Substring(0, 1);
+                        if (strExtensionTest1 == ".")
+                        {
+                            sTest1 = sOutputFile.Substring(0, sOutputFile.Length - 4) + "_Point.shp";
+                            sTest2 = sOutputFile.Substring(0, sOutputFile.Length - 4) + "_Poly.shp";
+                        }
+                        else
+                        {
+                            sTest1 = sOutputFile + "_Point.shp";
+                            sTest2 = sOutputFile + "_Poly.shp";
+                        }
+                    }
+                    if (sOutputFormat.Contains("Geodatabase") || sOutputFormat == "Shapefile")
+                    {
                         if (myArcMapFuncs.FeatureclassExists(sTest1) || myArcMapFuncs.FeatureclassExists(sTest2))
                         {
                             DialogResult dlResult1 = MessageBox.Show("The output file already exists. Do you want to overwrite it?", "Data Selector", MessageBoxButtons.YesNo);
@@ -275,8 +311,57 @@ namespace DataSelector
                         else
                             blDone = true;
                     }
+                    else
+                    {
+                        // Check for dBase and CSV
+                        if (sOutputFormat == "dBASE file")
+                        // Basically if the user chose a text file with an extension, the dialog will already have given her feedback and we don't need to do this again.
+                        {
+                            if (myFileFuncs.FileExists(sOutputFile))
+                            {
+                                DialogResult dlResult1 = MessageBox.Show("The output file already exists. Do you want to overwrite it?", "Data Selector", MessageBoxButtons.YesNo);
+                                if (dlResult1 == System.Windows.Forms.DialogResult.Yes)
+                                    blDone = true;
+                            }
+                            else
+                                blDone = true;
+                        }
+                        else
+                            blDone = true; // Text file; already checked by dialog.
+
+                    }
                 }
-                
+                else if (blDone != true) // non-spatial, not done yet.
+                {
+                    // Test for the types of flat output.
+                    if (sOutputFormat.Contains("Geodatabase"))
+                    {
+                        if (myArcMapFuncs.TableExists(sOutputFile))
+                        {
+                            DialogResult dlResult1 = MessageBox.Show("The output file already exists. Do you want to overwrite it?", "Data Selector", MessageBoxButtons.YesNo);
+                            if (dlResult1 == System.Windows.Forms.DialogResult.Yes)
+                                blDone = true;
+                        }
+                        else
+                            blDone = true;
+                    }
+                    else if (sOutputFormat == "dBASE file")
+                    // Basically if the user chose a text file, the dialog will already have given her feedback and we don't need to do this again.
+                    {
+                        if (myFileFuncs.FileExists(sOutputFile))
+                        {
+                            DialogResult dlResult1 = MessageBox.Show("The output file already exists. Do you want to overwrite it?", "Data Selector", MessageBoxButtons.YesNo);
+                            if (dlResult1 == System.Windows.Forms.DialogResult.Yes)
+                                blDone = true;
+                        }
+                        else
+                            blDone = true;
+                    }
+                    else
+                        blDone = true; // Text file; already checked by dialog.
+                    
+                }
+                    
             }
             this.BringToFront();
             
@@ -285,40 +370,6 @@ namespace DataSelector
                 // User has pressed Cancel. Bring original menu to the front.
                 MessageBox.Show("Please select an output file");
                 this.Cursor = Cursors.Default;
-                return;
-            }
-
-            // Let's fix the output file name here and now. 
-            // Do extension check and also some final sanity checks. 
-            string strExtensionTest = sOutputFile.Substring(sOutputFile.Length - 4, 4).Substring(0, 1);
-            Boolean blHasExtension = false;
-            if (strExtensionTest == ".") blHasExtension = true;
-
-            // if there isn't, put one one.
-            if (sOutputFormat == "Text file" && !blHasExtension)
-            {
-                sOutputFile = sOutputFile + ".csv";
-            }
-            else if (sOutputFormat == "dBASE file" && !blHasExtension)
-            {
-                sOutputFile = sOutputFile + ".dbf";
-            }
-            else if (sOutputFormat == "Shapefile" && !blHasExtension)
-            {
-                sOutputFile = sOutputFile + ".shp";
-            }
-            else if ((sOutputFormat.Contains("Geodatabase")) && (blHasExtension || !sOutputFile.Contains(".gdb"))) // It is a geodatabase file and should not have an extension.
-            {
-                MessageBox.Show("Please select a file geodatabase output file");
-                this.Cursor = Cursors.Default;
-                this.BringToFront();
-                return;
-            }
-            else if ((!sOutputFormat.Contains("Geodatabase")) && (sOutputFile.Contains(".gdb"))) // Trying to store a non-geoDB in a gdb
-            {
-                MessageBox.Show("Cannot store " + sOutputFormat + " inside a geodatabase. Please choose a different output location");
-                this.Cursor = Cursors.Default;
-                this.BringToFront();
                 return;
             }
             this.Focus();
@@ -344,7 +395,7 @@ namespace DataSelector
             myADOFuncs.AddSQLParameter(ref myCommand, "UserID", sUserID);
             myADOFuncs.AddSQLParameter(ref myCommand, "Split", strSplit);
             
-            // Open ADO connection to database and
+            // Open SQL connection to database and
             // Run the stored procedure.
             bool blSuccess = true;
             try
@@ -439,18 +490,19 @@ namespace DataSelector
                     // Not a spatial export, but it is a spatial layer so there are two files.
                     // Function pulls them back together again.
 
+                    // if schema.ini file exists delete it.
+                    string strIniFile = myFileFuncs.GetDirectoryName(sOutputFile) + "\\schema.ini";
+                    if (myFileFuncs.FileExists(strIniFile))
+                    {
+                        bool blDeleted = myFileFuncs.DeleteFile(strIniFile); // Not checking for success at the moment.
+                    }
+
                     blFlatTable = true;
                     string sFinalFile = "";
                     if (sOutputFormat == "dBASE file")
                     {
                         sFinalFile = sOutputFile;
                         sOutputFile = myFileFuncs.GetDirectoryName(sOutputFile) + "\\Temp.csv";
-                        // if schema.ini file exists delete it.
-                        string strIniFile = myFileFuncs.GetDirectoryName(sOutputFile) + "\\schema.ini";
-                        if (myFileFuncs.FileExists(strIniFile))
-                        {
-                            bool blDeleted = myFileFuncs.DeleteFile(strIniFile); // Not checking for success at the moment.
-                        }
                     }
                     blResult = myArcMapFuncs.CopyToCSV(strPointOutTab, sOutputFile, true, false, true);
                     if (!blResult)
@@ -504,7 +556,6 @@ namespace DataSelector
                 if (sOutputFormat == "Text file")
                 {
                     // We are exporting a non-spatial output to text file.
-                    MessageBox.Show(strOutTab + ", " + sOutputFile);
                     blResult = myArcMapFuncs.CopyToCSV(strOutTab, sOutputFile, false, false, true);
                     if (!blResult)
                     {

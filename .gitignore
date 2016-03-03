@@ -171,6 +171,9 @@ UpgradeLog*.htm
 App_Data/*.mdf
 App_Data/*.ldf
 
+# Test extracts
+Extracts/*.*
+
 =======
 # Configuration information used by CodeSMART 10 and VS10X Extensions
 *.*proj.vs10x

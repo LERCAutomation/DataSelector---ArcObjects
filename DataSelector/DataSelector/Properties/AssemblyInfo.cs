@@ -6,11 +6,11 @@ using System.Runtime.InteropServices;
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
 [assembly: AssemblyTitle("DataSelector")]
-[assembly: AssemblyDescription("")]
+[assembly: AssemblyDescription("DataSelector is an ArcGIS add-in used to extract biodiversity information from SQL Server based on any selection criteria.")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("")]
+[assembly: AssemblyCompany("Hester Lyons Consulting")]
 [assembly: AssemblyProduct("DataSelector")]
-[assembly: AssemblyCopyright("Copyright ©  2016")]
+[assembly: AssemblyCopyright("Copyright ©  2016 Sussex Biodiversity Record Centre")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 

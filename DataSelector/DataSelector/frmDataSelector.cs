@@ -1,4 +1,26 @@
-﻿using System;
+﻿
+// DataSelector is an ArcGIS add-in used to extract biodiversity
+// information from SQL Server based on any selection criteria.
+//
+// Copyright © 2016 Sussex Biodiversity Record Centre
+//
+// This file is part of DataSelector.
+//
+// DataSelector is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// DataSelector is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with DataSelector.  If not, see <http://www.gnu.org/licenses/>.
+
+
+using System;
 using System.IO;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -7,6 +29,7 @@ using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Windows.Forms;
+using System.Diagnostics;
 
 using HLSelectorToolConfig;
 using HLESRISQLServerFunctions;
@@ -25,7 +48,7 @@ using ESRI.ArcGIS.ArcMapUI;
 using ESRI.ArcGIS.Geoprocessing;
 using ESRI.ArcGIS.Geoprocessor;
 
-// Unfortunately we also need ADO.Net in order to run the stored procedures with parameters...
+// Unfortunately we also need an SQL client in order to run the stored procedures with parameters...
 using System.Data.SqlClient;
 
 
@@ -34,10 +57,10 @@ namespace DataSelector
     public partial class frmDataSelector : Form
     {
         SelectorToolConfig myConfig;
-        ESRISQLServerFunctions myArcSDEFuncs;
-        ADOSQLServerFunctions myADOFuncs;
+        ArcSDEFunctions myArcSDEFuncs;
+        SQLServerFunctions mySQLServerFuncs;
         FileFunctions myFileFuncs;
-        bool blOpenForm;
+        bool blOpenForm; // This tracks all the way through whether the form is initialising correctly.
         public frmDataSelector()
         {
             InitializeComponent();
@@ -46,29 +69,50 @@ namespace DataSelector
             myConfig = new SelectorToolConfig(); // Should find the config file automatically.
             if (myConfig.GetFoundXML() == false)
             {
-                MessageBox.Show("XML file not found; form cannot load.");
+                MessageBox.Show("XML file not found; form cannot load.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 blOpenForm = false;
             }
             else if (myConfig.GetLoadedXML() == false)
             {
-                MessageBox.Show("Error loading XML File; form cannot load.");
+                MessageBox.Show("Error loading XML File; form cannot load.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 blOpenForm = false;
             }
 
+            myArcSDEFuncs = new ArcSDEFunctions();
+            mySQLServerFuncs = new SQLServerFunctions();
+            myFileFuncs = new FileFunctions();
+            // fill the list box with SQL tables
+            string strSDE = myConfig.GetSDEName();
+
+            if (!myFileFuncs.FileExists(strSDE) && blOpenForm)
+            {
+                MessageBox.Show("ArcSDE connection file " + strSDE + " not found. Cannot load Data Selector", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                blOpenForm = false;
+            }
+
+            IWorkspace wsSQLWorkspace = null;
+
             if (blOpenForm)
             {
-                myArcSDEFuncs = new ESRISQLServerFunctions();
-                myADOFuncs = new ADOSQLServerFunctions();
-                myFileFuncs = new FileFunctions();
-                // fill the list box with SQL tables
-                string strSDE = myConfig.GetSDEName();
+                try
+                {
+                    wsSQLWorkspace = myArcSDEFuncs.OpenArcSDEConnection(strSDE);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("Cannot open ArcSDE connection " + strSDE + ". Error is " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    blOpenForm = false;
+                }
+            }
+            if (blOpenForm)
+            {
+
                 string strIncludeWildcard = myConfig.GetIncludeWildcard();
                 string strExcludeWildcard = myConfig.GetExcludeWildcard();
                 string strDefaultFormat = myConfig.GetDefaultFormat();
 
                 cmbOutFormat.Text = strDefaultFormat;
-
-                IWorkspace wsSQLWorkspace = myArcSDEFuncs.OpenArcSDEConnection(strSDE);
+                
                 List<string> strTableList = myArcSDEFuncs.GetTableNames(wsSQLWorkspace, strIncludeWildcard, strExcludeWildcard);
                 foreach (string strItem in strTableList)
                 {
@@ -78,7 +122,7 @@ namespace DataSelector
                 wsSQLWorkspace = null;
                 // However keep the Config and SQLFuncs objects alive for use later in the form.
             }
-            else
+            else // Something has gone wrong during initialisation; don't load form.
             {
                     Load += (s, e) => Close();
                     return;
@@ -153,6 +197,13 @@ namespace DataSelector
             string strFileName;
             if (openFileDialog1.ShowDialog() == DialogResult.OK)
             {
+                // firstly clear the form.
+                txtColumns.Text = "";
+                txtWhere.Text = "";
+                txtGroupBy.Text = "";
+                txtOrderBy.Text = "";
+
+                
                 strFileName = openFileDialog1.FileName;
                 StreamReader qryFile = new StreamReader(strFileName);
                 // read query
@@ -164,17 +215,17 @@ namespace DataSelector
                         qryLine = qryLine.Substring(8, qryLine.Length - 9);
                         txtColumns.Text = qryLine.Replace("$$", "\r\n");
                     }
-                    if (qryLine.Substring(0, 7).ToUpper() == "WHERE {" && qryLine.ToUpper() != "WHERE {}")
+                    else if (qryLine.Substring(0, 7).ToUpper() == "WHERE {" && qryLine.ToUpper() != "WHERE {}")
                     {
                         qryLine = qryLine.Substring(7, qryLine.Length - 8);
                         txtWhere.Text = qryLine.Replace("$$", "\r\n");
                     }
-                    if (qryLine.Substring(0, 10).ToUpper() == "GROUP BY {" && qryLine.ToUpper() != "GROUP BY {}")
+                    else if (qryLine.Substring(0, 10).ToUpper() == "GROUP BY {" && qryLine.ToUpper() != "GROUP BY {}")
                     {
                         qryLine = qryLine.Substring(10, qryLine.Length - 11);
                         txtGroupBy.Text = qryLine.Replace("$$", "\r\n");
                     }
-                    if (qryLine.Substring(0, 10).ToUpper() == "ORDER BY {" && qryLine.ToUpper() != "ORDER BY {}")
+                    else if (qryLine.Substring(0, 10).ToUpper() == "ORDER BY {" && qryLine.ToUpper() != "ORDER BY {}" )
                     {
                         qryLine = qryLine.Substring(10, qryLine.Length - 11);
                         txtOrderBy.Text = qryLine.Replace("$$", "\r\n");
@@ -249,7 +300,7 @@ namespace DataSelector
 
             myFileFuncs.WriteLine(strLogFile, "Table name is " + sTableName);
 
-            SqlConnection dbConn = myADOFuncs.CreateSQLConnection(myConfig.GetConnectionString());
+            SqlConnection dbConn = mySQLServerFuncs.CreateSQLConnection(myConfig.GetConnectionString());
             
             // Decide whether or not there is a geometry field in the returned data.
             // Select the stored procedure accordingly
@@ -268,7 +319,7 @@ namespace DataSelector
                 dbConn.Open();
                 foreach (string strField in strGeometryFields)
                 {
-                    if (myADOFuncs.FieldExists(ref dbConn, strCheckTable, strField))
+                    if (mySQLServerFuncs.FieldExists(ref dbConn, strCheckTable, strField))
                         blSpatial = true;
                 }
                 dbConn.Close();
@@ -455,22 +506,31 @@ namespace DataSelector
             // Now we are all set to go - do the process.
             // Set up all required parameters.
             //SqlConnection dbConn = myADOFuncs.CreateSQLConnection(myConfig.GetConnectionString());
-            SqlCommand myCommand = myADOFuncs.CreateSQLCommand(ref dbConn, strStoredProcedure, CommandType.StoredProcedure); // Note pass connection by ref here.
-            myADOFuncs.AddSQLParameter(ref myCommand, "Schema", sDefaultSchema);
-            myADOFuncs.AddSQLParameter(ref myCommand, "SpeciesTable", sTableName);
-            myADOFuncs.AddSQLParameter(ref myCommand, "ColumnNames", sColumnNames);
-            myADOFuncs.AddSQLParameter(ref myCommand, "WhereClause", sWhereClause);
-            myADOFuncs.AddSQLParameter(ref myCommand, "GroupByClause", sGroupClause);
-            myADOFuncs.AddSQLParameter(ref myCommand, "OrderByClause", sOrderClause);
-            myADOFuncs.AddSQLParameter(ref myCommand, "UserID", sUserID);
-            myADOFuncs.AddSQLParameter(ref myCommand, "Split", strSplit);
+            SqlCommand myCommand = mySQLServerFuncs.CreateSQLCommand(ref dbConn, strStoredProcedure, CommandType.StoredProcedure); // Note pass connection by ref here.
+            mySQLServerFuncs.AddSQLParameter(ref myCommand, "Schema", sDefaultSchema);
+            mySQLServerFuncs.AddSQLParameter(ref myCommand, "SpeciesTable", sTableName);
+            mySQLServerFuncs.AddSQLParameter(ref myCommand, "ColumnNames", sColumnNames);
+            mySQLServerFuncs.AddSQLParameter(ref myCommand, "WhereClause", sWhereClause);
+            mySQLServerFuncs.AddSQLParameter(ref myCommand, "GroupByClause", sGroupClause);
+            mySQLServerFuncs.AddSQLParameter(ref myCommand, "OrderByClause", sOrderClause);
+            mySQLServerFuncs.AddSQLParameter(ref myCommand, "UserID", sUserID);
+            mySQLServerFuncs.AddSQLParameter(ref myCommand, "Split", strSplit);
 
             myFileFuncs.WriteLine(strLogFile, "Database schema is " + sDefaultSchema);
             myFileFuncs.WriteLine(strLogFile, "Species table is " + sTableName);
             myFileFuncs.WriteLine(strLogFile, "Column names are " + sColumnNames.Replace("\r\n", " "));
-            myFileFuncs.WriteLine(strLogFile, "Where clause is " + sWhereClause.Replace("\r\n", " "));
-            myFileFuncs.WriteLine(strLogFile, "Group by clause is " + sGroupClause.Replace("\r\n", " "));
-            myFileFuncs.WriteLine(strLogFile, "Order by clause is " + sOrderClause.Replace("\r\n", " "));
+            if (sWhereClause.Length > 0)
+                myFileFuncs.WriteLine(strLogFile, "Where clause is " + sWhereClause.Replace("\r\n", " "));
+            else
+                myFileFuncs.WriteLine(strLogFile, "No where clause was used");
+            if (sGroupClause.Length > 0)
+                myFileFuncs.WriteLine(strLogFile, "Group by clause is " + sGroupClause.Replace("\r\n", " "));
+            else
+                myFileFuncs.WriteLine(strLogFile, "No group by clause was used");
+            if (sOrderClause.Length > 0)
+                myFileFuncs.WriteLine(strLogFile, "Order by clause is " + sOrderClause.Replace("\r\n", " "));
+            else
+                myFileFuncs.WriteLine(strLogFile, "No order by clause was used");
             myFileFuncs.WriteLine(strLogFile, "Split is " + strSplit);
             myFileFuncs.WriteLine(strLogFile, "Note that Split is 1 for spatial data, 0 for non-spatial queries");
 
@@ -486,12 +546,12 @@ namespace DataSelector
                 string strRowsAffect = myCommand.ExecuteNonQuery().ToString();
                 if (blSpatial)
                 {
-                    blSuccess = myADOFuncs.TableHasRows(ref dbConn, strPointFC);
+                    blSuccess = mySQLServerFuncs.TableHasRows(ref dbConn, strPointFC);
                     if (!blSuccess)
-                        blSuccess = myADOFuncs.TableHasRows(ref dbConn, strPolyFC);
+                        blSuccess = mySQLServerFuncs.TableHasRows(ref dbConn, strPolyFC);
                 }
                 else
-                    blSuccess = myADOFuncs.TableHasRows(ref dbConn, strTable);
+                    blSuccess = mySQLServerFuncs.TableHasRows(ref dbConn, strTable);
                 myFileFuncs.WriteLine(strLogFile, "Closing SQL Connection");
                 dbConn.Close();
             }
@@ -692,7 +752,7 @@ namespace DataSelector
                     if (sColumnNames == "*")
                     {
                         dbConn.Open();
-                        string[] strColumnNames = myADOFuncs.GetFieldNames(ref dbConn, sTableName);
+                        string[] strColumnNames = mySQLServerFuncs.GetFieldNames(ref dbConn, sTableName);
                         dbConn.Close();
                         sColumnNames = "";
                         foreach (string strField in strColumnNames)
@@ -715,10 +775,10 @@ namespace DataSelector
             
             // Delete the temporary tables in the SQL database
             strStoredProcedure = "AFClearSppSubset";
-            SqlCommand myCommand2 = myADOFuncs.CreateSQLCommand(ref dbConn, strStoredProcedure, CommandType.StoredProcedure); // Note pass connection by ref here.
-            myADOFuncs.AddSQLParameter(ref myCommand2, "Schema", sDefaultSchema);
-            myADOFuncs.AddSQLParameter(ref myCommand2, "SpeciesTable", sTableName);
-            myADOFuncs.AddSQLParameter(ref myCommand2, "UserId", sUserID);
+            SqlCommand myCommand2 = mySQLServerFuncs.CreateSQLCommand(ref dbConn, strStoredProcedure, CommandType.StoredProcedure); // Note pass connection by ref here.
+            mySQLServerFuncs.AddSQLParameter(ref myCommand2, "Schema", sDefaultSchema);
+            mySQLServerFuncs.AddSQLParameter(ref myCommand2, "SpeciesTable", sTableName);
+            mySQLServerFuncs.AddSQLParameter(ref myCommand2, "UserId", sUserID);
             try
             {
                 myFileFuncs.WriteLine(strLogFile, "Opening SQL connection");
@@ -764,6 +824,8 @@ namespace DataSelector
                 this.Close();
             else this.BringToFront();
 
+            Process.Start("notepad.exe", strLogFile);
+
             // Tidy up
             myCommand.Dispose();
             myCommand2.Dispose();
@@ -774,27 +836,7 @@ namespace DataSelector
 
         private void button1_Click(object sender, EventArgs e)
         {
-            IApplication theApplication = (IApplication)ArcMap.Application;
-            //bool aTest = false;
-            ArcMapFunctions myFuncs = new ArcMapFunctions(theApplication);
-            //aTest = myFuncs.GroupLayerExists("myTest");
-            //MessageBox.Show(aTest.ToString());
-            //ILayer myLayer = myFuncs.GetLayer("HesTest");
-            //myFuncs.MoveToGroupLayer("myTest", myLayer);
-            //myFuncs.ShowTable("HesTab", true);
-            //myFuncs.ShowTable("HesCSV", true);
-            //SqlConnection dbConn = myADOFuncs.CreateSQLConnection(myConfig.GetConnectionString());
-            //string strTable = myConfig.GetDatabaseSchema() + "." + "TVERC_Spp_Full";
-            //dbConn.Open();
-            //bool blTest = myADOFuncs.FieldExists(ref dbConn, strTable, "SP_GEOMETRY");
-            //dbConn.Close();
-            //MessageBox.Show(blTest.ToString());
-            IObjectClass myObject = (IObjectClass)myFuncs.GetFeatureClass(@"H:\Dev\LERCAutomation\DataSelector---ArcObjects\Extracts\Testing.gdb",
-                "Whitethroat_Poly");
-            IClassSchemaEdit myEdit = (IClassSchemaEdit)myObject;
-            myEdit.AlterFieldAliasName("SP_GEOMETRY", "Shape");
-            myEdit.AlterFieldAliasName("SP_GEOMETRY_Area", "Shape_Area");
-            myEdit.AlterFieldAliasName("SP_GEOMETRY_Length", "Shape_Length");
+            Process.Start("notepad.exe", @"H:\Dev\LERCAutomation\DataSelector---ArcObjects\LogFiles\DataSelector_Sony.log");
             MessageBox.Show("Field names changed");
                
         }

@@ -6,14 +6,17 @@
   <Image>Images\DataSelector.png</Image>
   <Author>Hester Lyons</Author>
   <Company>Hester Lyons Consulting</Company>
-  <Date>07/01/2016</Date>
+  <Date>08/03/2016</Date>
   <Targets>
     <Target name="Desktop" version="10.2" />
   </Targets>
   <AddIn language="CLR" library="DataSelector.dll" namespace="DataSelector">
     <ArcMap>
       <Commands>
-        <Button id="Hester_Lyons_Consulting_DataSelector_Button1" class="LaunchDataSelector" message="Data extractor tool for Sussex Environmental Records Centre. Define SQL query, results are shown in ArcMap and saved locally." caption="Data Selector" tip="Extract data from species database through SQL query" category="Add-In Controls" image="Images\Button1.png" />
+        <Button id="Hester_Lyons_Consulting_DataSelector_Button1" class="LaunchDataSelector" 
+                message="Data extractor tool for Sussex Environmental Records Centre. 
+                Define, load, save and run SQL query. Results are shown in ArcMap and saved locally." caption="Data Selector" 
+                tip="Extract data from species database through SQL query" category="Add-In Controls" image="Images\Button1.png" />
       </Commands>
     </ArcMap>
   </AddIn>

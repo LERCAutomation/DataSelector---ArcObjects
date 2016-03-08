@@ -1,4 +1,25 @@
-﻿using System;
+﻿// DataSelector is an ArcGIS add-in used to extract biodiversity
+// information from SQL Server based on any selection criteria.
+//
+// Copyright © 2016 Sussex Biodiversity Record Centre
+//
+// This file is part of DataSelector.
+//
+// DataSelector is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// DataSelector is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with DataSelector.  If not, see <http://www.gnu.org/licenses/>.
+
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -16,7 +37,7 @@ using System.Text.RegularExpressions;
 
 namespace HLESRISQLServerFunctions
 {
-    public class ESRISQLServerFunctions
+    public class ArcSDEFunctions
     {
         // For example, connectionFile = @"C:\myData\Connection to Kona.sde".
         public IWorkspace OpenArcSDEConnection(String connectionFile)
@@ -64,7 +85,7 @@ namespace HLESRISQLServerFunctions
     
     }
 
-    public class ADOSQLServerFunctions
+    public class SQLServerFunctions
     {
         public SqlConnection CreateSQLConnection(string connectionString)
         {

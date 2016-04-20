@@ -33,7 +33,7 @@ using ESRI.ArcGIS.Framework;
 using ESRI.ArcGIS.Carto;
 using ESRI.ArcGIS.Geodatabase;
 using ESRI.ArcGIS.GeoDatabaseUI;
-
+using ESRI.ArcGIS.Geometry;
 using ESRI.ArcGIS.Geoprocessing;
 using ESRI.ArcGIS.esriSystem;
 using ESRI.ArcGIS.DataSourcesFile;
@@ -42,6 +42,7 @@ using ESRI.ArcGIS.DataSourcesOleDB;
 
 using ESRI.ArcGIS.Catalog;
 using ESRI.ArcGIS.CatalogUI;
+using ESRI.ArcGIS.Display;
 
 using HLFileFunctions;
 
@@ -1195,6 +1196,56 @@ namespace HLArcMapModule
             myWin.Table = myTable;
             myWin.Application = thisApplication;
             myWin.Show(true);
+        }
+
+        public void ToggleTOC()
+        {
+            IApplication m_app = thisApplication;
+
+            IDockableWindowManager pDocWinMgr = m_app as IDockableWindowManager;
+            UID uid = new UIDClass();
+            uid.Value = "{368131A0-F15F-11D3-A67E-0008C7DF97B9}";
+            IDockableWindow pTOC = pDocWinMgr.GetDockableWindow(uid);
+            if (pTOC.IsVisible())
+                pTOC.Show(false);
+            else pTOC.Show(true);
+            IMxApplication2 thisApp = (IMxApplication2)thisApplication;
+            thisApp.Display.Invalidate(null, true, -1);
+            IActiveView activeView = GetActiveView();
+            activeView.Refresh();
+            thisApplication.RefreshWindow();
+        }
+
+        public void ToggleDrawing()
+        {
+            IMxApplication2 thisApp = (IMxApplication2)thisApplication;
+            thisApp.PauseDrawing = !thisApp.PauseDrawing;
+            thisApp.Display.Invalidate(null, true, -1);
+            IActiveView activeView = GetActiveView();
+            activeView.Refresh();
+            thisApplication.RefreshWindow();
+        }
+
+        public void ZoomToLayer(string aLayerName, bool Messages = false)
+        {
+            if (!LayerExists(aLayerName))
+            {
+                if (Messages)
+                    MessageBox.Show("The layer " + aLayerName + " does not exist in the map");
+                return;
+            }
+            IActiveView activeView = GetActiveView();
+            ILayer pLayer = GetLayer(aLayerName);
+            IEnvelope pEnv = pLayer.AreaOfInterest;
+            pEnv.Expand(1.05, 1.05, true);
+            activeView.Extent = pEnv;
+            activeView.Refresh();
+        }
+
+        public IActiveView GetActiveView()
+        {
+            IMxDocument mxDoc = GetIMXDocument();
+            return mxDoc.ActiveView;
         }
     }
 }

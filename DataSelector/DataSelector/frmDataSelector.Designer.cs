@@ -257,7 +257,7 @@
             this.Controls.Add(this.txtColumns);
             this.Controls.Add(this.lblColumns);
             this.Name = "frmDataSelector";
-            this.Text = "Data Selector 1.0";
+            this.Text = "Data Selector 1.01";
             this.ResumeLayout(false);
             this.PerformLayout();
 

@@ -14,9 +14,9 @@
     <ArcMap>
       <Commands>
         <Button id="Hester_Lyons_Consulting_DataSelector_Button1" class="LaunchDataSelector" 
-                message="Data extractor tool for Sussex Environmental Records Centre. 
-                Define, load, save and run SQL query. Results are shown in ArcMap and saved locally." caption="Data Selector" 
-                tip="Extract data from species database through SQL query" category="Add-In Controls" image="Images\Button1.png" />
+                message="Data selector tool. Define, load, save and run SQL query. Results are shown in ArcMap and saved locally." 
+                caption="Data Selector" 
+                tip="Launch data selector" category="Add-In Controls" image="Images\Button1.png" />
       </Commands>
     </ArcMap>
   </AddIn>

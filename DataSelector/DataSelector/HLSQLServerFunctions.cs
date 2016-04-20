@@ -127,6 +127,15 @@ namespace HLESRISQLServerFunctions
         }
         #endregion
 
+        public int CountRows(ref SqlConnection aConnection, string aTableName)
+        {
+            string strQuery = "SELECT COUNT(*) FROM " + aTableName;
+            SqlCommand objCommand = new SqlCommand(strQuery, aConnection);
+            int aCount = (int)objCommand.ExecuteScalar();
+
+            return aCount;
+        }
+
         public bool FieldExists(ref SqlConnection aConnection, string aTableName, string aColumnName)
         {
             string strQuery = "SELECT TOP 1 * FROM " + aTableName;

@@ -210,22 +210,22 @@ namespace DataSelector
                 string qryLine = "";
                 while ((qryLine = qryFile.ReadLine()) != null)
                 {
-                    if (qryLine.Substring(0,8).ToUpper() == "FIELDS {" && qryLine.ToUpper() != "FIELDS {}")
+                    if (qryLine.Length > 7 && qryLine.Substring(0,8).ToUpper() == "FIELDS {" && qryLine.ToUpper() != "FIELDS {}")
                     {
                         qryLine = qryLine.Substring(8, qryLine.Length - 9);
                         txtColumns.Text = qryLine.Replace("$$", "\r\n");
                     }
-                    else if (qryLine.Substring(0, 7).ToUpper() == "WHERE {" && qryLine.ToUpper() != "WHERE {}")
+                    else if (qryLine.Length > 6 && qryLine.Substring(0, 7).ToUpper() == "WHERE {" && qryLine.ToUpper() != "WHERE {}")
                     {
                         qryLine = qryLine.Substring(7, qryLine.Length - 8);
                         txtWhere.Text = qryLine.Replace("$$", "\r\n");
                     }
-                    else if (qryLine.Substring(0, 10).ToUpper() == "GROUP BY {" && qryLine.ToUpper() != "GROUP BY {}")
+                    else if (qryLine.Length > 9 && qryLine.Substring(0, 10).ToUpper() == "GROUP BY {" && qryLine.ToUpper() != "GROUP BY {}")
                     {
                         qryLine = qryLine.Substring(10, qryLine.Length - 11);
                         txtGroupBy.Text = qryLine.Replace("$$", "\r\n");
                     }
-                    else if (qryLine.Substring(0, 10).ToUpper() == "ORDER BY {" && qryLine.ToUpper() != "ORDER BY {}" )
+                    else if (qryLine.Length > 9 && qryLine.Substring(0, 10).ToUpper() == "ORDER BY {" && qryLine.ToUpper() != "ORDER BY {}")
                     {
                         qryLine = qryLine.Substring(10, qryLine.Length - 11);
                         txtOrderBy.Text = qryLine.Replace("$$", "\r\n");
@@ -265,11 +265,14 @@ namespace DataSelector
                     MessageBox.Show("Cannot delete log file. Please make sure it is not open in another window");
                     return;
                 }
-                myFileFuncs.CreateLogFile(strLogFile);
+                //myFileFuncs.CreateLogFile(strLogFile);
             }
             myFileFuncs.WriteLine(strLogFile, "-----------------------------------------------------------------------");
             myFileFuncs.WriteLine(strLogFile, "Process started");
             myFileFuncs.WriteLine(strLogFile, "-----------------------------------------------------------------------");
+
+            myArcMapFuncs.ToggleDrawing();
+            myArcMapFuncs.ToggleTOC();
 
 
             // Do some basic checks and fix as required.
@@ -277,12 +280,14 @@ namespace DataSelector
             if (string.IsNullOrEmpty(sUserID))
             {
                 sUserID = "Temp";
+                myFileFuncs.WriteLine(strLogFile, "Please note user ID is 'Temp'");
             }
-            myFileFuncs.WriteLine(strLogFile, "User ID is " + sUserID);
 
 
             if (string.IsNullOrEmpty(sColumnNames))
             {
+                myArcMapFuncs.ToggleDrawing();
+                myArcMapFuncs.ToggleTOC();
                 MessageBox.Show("Please specify which columns you wish to select");
                 this.BringToFront();
                 this.Cursor = Cursors.Default;
@@ -292,13 +297,14 @@ namespace DataSelector
             // Table name should always be selected
             if (string.IsNullOrEmpty(sTableName))
             {
+                myArcMapFuncs.ToggleDrawing();
+                myArcMapFuncs.ToggleTOC();
                 MessageBox.Show("Please select a table to query from");
                 this.BringToFront();
                 this.Cursor = Cursors.Default;
+
                 return;
             }
-
-            myFileFuncs.WriteLine(strLogFile, "Table name is " + sTableName);
 
             SqlConnection dbConn = mySQLServerFuncs.CreateSQLConnection(myConfig.GetConnectionString());
             
@@ -373,6 +379,8 @@ namespace DataSelector
                     else if ((sOutputFormat.Contains("Geodatabase")) && (blHasExtension || !sOutputFile.Contains(".gdb"))) // It is a geodatabase file and should not have an extension.
                     {
                         MessageBox.Show("Please select a file geodatabase output file");
+                        myArcMapFuncs.ToggleDrawing();
+                        myArcMapFuncs.ToggleTOC();
                         this.Cursor = Cursors.Default;
                         this.BringToFront();
                         return;
@@ -380,6 +388,8 @@ namespace DataSelector
                     else if ((!sOutputFormat.Contains("Geodatabase")) && (sOutputFile.Contains(".gdb"))) // Trying to store a non-geoDB in a gdb
                     {
                         MessageBox.Show("Cannot store " + sOutputFormat + " inside a geodatabase. Please choose a different output location");
+                        myArcMapFuncs.ToggleDrawing();
+                        myArcMapFuncs.ToggleTOC();
                         this.Cursor = Cursors.Default;
                         this.BringToFront();
                         return;
@@ -484,6 +494,8 @@ namespace DataSelector
             {
                 // User has pressed Cancel. Bring original menu to the front.
                 MessageBox.Show("Please select an output file");
+                myArcMapFuncs.ToggleDrawing();
+                myArcMapFuncs.ToggleTOC();
                 this.Cursor = Cursors.Default;
                 return;
             }
@@ -495,7 +507,7 @@ namespace DataSelector
 
             ////////////////////////////////////////////////////// INPUT ALL CHECKED AND OK, START PROCESS ////////////////////////////////////////////////////////
 
-            
+
             string strLayerName = myFileFuncs.GetFileName(sOutputFile);
             
             if (!sOutputFormat.Contains("Geodatabase"))
@@ -516,7 +528,6 @@ namespace DataSelector
             mySQLServerFuncs.AddSQLParameter(ref myCommand, "UserID", sUserID);
             mySQLServerFuncs.AddSQLParameter(ref myCommand, "Split", strSplit);
 
-            myFileFuncs.WriteLine(strLogFile, "Database schema is " + sDefaultSchema);
             myFileFuncs.WriteLine(strLogFile, "Species table is " + sTableName);
             myFileFuncs.WriteLine(strLogFile, "Column names are " + sColumnNames.Replace("\r\n", " "));
             if (sWhereClause.Length > 0)
@@ -531,13 +542,18 @@ namespace DataSelector
                 myFileFuncs.WriteLine(strLogFile, "Order by clause is " + sOrderClause.Replace("\r\n", " "));
             else
                 myFileFuncs.WriteLine(strLogFile, "No order by clause was used");
-            myFileFuncs.WriteLine(strLogFile, "Split is " + strSplit);
-            myFileFuncs.WriteLine(strLogFile, "Note that Split is 1 for spatial data, 0 for non-spatial queries");
-
+            if (strSplit == "1")
+                myFileFuncs.WriteLine(strLogFile, "Data is spatial and will be split into a point and a polygon layer");
+            else
+                myFileFuncs.WriteLine(strLogFile, "Data is not spatial and will not be split");
+            
 
             // Open SQL connection to database and
             // Run the stored procedure.
             bool blSuccess = true;
+            int intCount = 0;
+            int intPolyCount = 0;
+            int intPointCount = 0;
             try
             {
                 myFileFuncs.WriteLine(strLogFile, "Opening SQL Connection");
@@ -552,6 +568,21 @@ namespace DataSelector
                 }
                 else
                     blSuccess = mySQLServerFuncs.TableHasRows(ref dbConn, strTable);
+
+                if (blSuccess && blSpatial)
+                {
+                    intPolyCount = mySQLServerFuncs.CountRows(ref dbConn, strPolyFC);
+                    intPointCount = mySQLServerFuncs.CountRows(ref dbConn, strPointFC);
+                    myFileFuncs.WriteLine(strLogFile, "Procedure returned " + intPointCount.ToString() + " point and " + intPolyCount.ToString() +
+                        " polygon records");
+                }
+                else if (blSuccess)
+                {
+                    intCount = mySQLServerFuncs.CountRows(ref dbConn, strTable);
+                    myFileFuncs.WriteLine(strLogFile, "Procedure returned " + intCount.ToString() + " records");
+                }
+
+
                 myFileFuncs.WriteLine(strLogFile, "Closing SQL Connection");
                 dbConn.Close();
             }
@@ -562,12 +593,13 @@ namespace DataSelector
                 myFileFuncs.WriteLine(strLogFile, "Could not execute stored procedure. System returned the following message: " +
                     ex.Message);
                 this.Cursor = Cursors.Default;
-                this.BringToFront();
                 dbConn.Close();
+                myArcMapFuncs.ToggleDrawing();
+                myArcMapFuncs.ToggleTOC();
+                this.BringToFront();
                 return;
             }
 
-  
             // convert the results to the designated output file.
             string strPointOutTab = myConfig.GetSDEName() + @"\" + strPointFC;
             string strPolyOutTab = myConfig.GetSDEName() + @"\" + strPolyFC; 
@@ -580,6 +612,9 @@ namespace DataSelector
             bool blResult = false;
             if (blSpatial && blSuccess) 
             {
+                
+
+
                 // export points and polygons
                 // How is the data to be exported?
                 if (sOutputFormat == "Geodatabase FC") 
@@ -595,6 +630,8 @@ namespace DataSelector
                         MessageBox.Show("Error exporting point geodatabase file");
                         myFileFuncs.WriteLine(strLogFile, "Error exporting point geodatabase file");
                         this.Cursor = Cursors.Default;
+                        myArcMapFuncs.ToggleDrawing();
+                        myArcMapFuncs.ToggleTOC();
                         this.BringToFront();
                         return;
                     }
@@ -605,6 +642,8 @@ namespace DataSelector
                         MessageBox.Show("Error exporting polygon geodatabase file");
                         myFileFuncs.WriteLine(strLogFile, "Error exporting polygon geodatabase file");
                         this.Cursor = Cursors.Default;
+                        myArcMapFuncs.ToggleDrawing();
+                        myArcMapFuncs.ToggleTOC();
                         this.BringToFront();
                         return;
                     }
@@ -624,6 +663,8 @@ namespace DataSelector
                         MessageBox.Show("Error exporting point shapefile");
                         myFileFuncs.WriteLine(strLogFile, "Error exporting point shapefile");
                         this.Cursor = Cursors.Default;
+                        myArcMapFuncs.ToggleDrawing();
+                        myArcMapFuncs.ToggleTOC();
                         this.BringToFront();
                         return;
                     }
@@ -634,6 +675,8 @@ namespace DataSelector
                         MessageBox.Show("Error exporting polygon shapefile");
                         myFileFuncs.WriteLine(strLogFile, "Error exporting polygon shapefile");
                         this.Cursor = Cursors.Default;
+                        myArcMapFuncs.ToggleDrawing();
+                        myArcMapFuncs.ToggleTOC();
                         this.BringToFront();
                         return;
                     }
@@ -664,6 +707,8 @@ namespace DataSelector
                         MessageBox.Show("Error exporting output table to text file " + sOutputFile);
                         myFileFuncs.WriteLine(strLogFile, "Error exporting output table to text file " + sOutputFile);
                         this.Cursor = Cursors.Default;
+                        myArcMapFuncs.ToggleDrawing();
+                        myArcMapFuncs.ToggleTOC();
                         this.BringToFront();
                         return;
                     }
@@ -675,6 +720,8 @@ namespace DataSelector
                         MessageBox.Show("Error appending output table to text file " + sOutputFile);
                         myFileFuncs.WriteLine(strLogFile, "Error appending output table to text file " + sOutputFile);
                         this.Cursor = Cursors.Default;
+                        myArcMapFuncs.ToggleDrawing();
+                        myArcMapFuncs.ToggleTOC();
                         this.BringToFront();
                     }
 
@@ -694,6 +741,8 @@ namespace DataSelector
                             MessageBox.Show("Error deleting temporary text file: " + ex.Message);
                             myFileFuncs.WriteLine(strLogFile, "Error deleting temporary text file: " + ex.Message);
                             this.Cursor = Cursors.Default;
+                            myArcMapFuncs.ToggleDrawing();
+                            myArcMapFuncs.ToggleTOC();
                             this.BringToFront();
                         }
                         if (!blResult)
@@ -701,6 +750,8 @@ namespace DataSelector
                             MessageBox.Show("Error exporting output table to dBASE file " + sFinalFile);
                             myFileFuncs.WriteLine(strLogFile, "Error exporting output table to dBASE file " + sFinalFile);
                             this.Cursor = Cursors.Default;
+                            myArcMapFuncs.ToggleDrawing();
+                            myArcMapFuncs.ToggleTOC();
                             this.BringToFront();
                             return;
                         }
@@ -725,6 +776,8 @@ namespace DataSelector
                         MessageBox.Show("Error exporting output table to text file " + sOutputFile);
                         myFileFuncs.WriteLine(strLogFile, "Error exporting output table to text file " + sOutputFile);
                         this.Cursor = Cursors.Default;
+                        myArcMapFuncs.ToggleDrawing();
+                        myArcMapFuncs.ToggleTOC();
                         this.BringToFront();
                         return;
                     }
@@ -740,6 +793,8 @@ namespace DataSelector
                         MessageBox.Show("Error exporting output table");
                         myFileFuncs.WriteLine(strLogFile, "Error exporting output table");
                         this.Cursor = Cursors.Default;
+                        myArcMapFuncs.ToggleDrawing();
+                        myArcMapFuncs.ToggleTOC();
                         this.BringToFront();
                         return;
                     }
@@ -795,6 +850,8 @@ namespace DataSelector
                 myFileFuncs.WriteLine(strLogFile, "Could not execute stored procedure. System returned the following message: " +
                     ex.Message);
                 this.Cursor = Cursors.Default;
+                myArcMapFuncs.ToggleDrawing();
+                myArcMapFuncs.ToggleTOC();
                 this.BringToFront();
                 return;
             }
@@ -819,6 +876,8 @@ namespace DataSelector
             myFileFuncs.WriteLine(strLogFile, "---------------------------------------------------------------------------");
 
             this.Cursor = Cursors.Default;
+            myArcMapFuncs.ToggleDrawing();
+            myArcMapFuncs.ToggleTOC();
             DialogResult dlResult = MessageBox.Show("Process complete. Do you wish to close the form?", "Data Selector", MessageBoxButtons.YesNo);
             if (dlResult == System.Windows.Forms.DialogResult.Yes)
                 this.Close();

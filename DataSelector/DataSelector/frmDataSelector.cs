@@ -348,11 +348,13 @@ namespace DataSelector
             {
                 if (sOutputFormat == "Geodatabase") sOutputFormat = "Geodatabase Table";
                 if (sOutputFormat == "Shapefile") sOutputFormat = "dBASE file";
+                myFileFuncs.WriteLine(strLogFile, "Output is not spatial. Output file type is " + sOutputFormat);
             }
 
             // Get the output file name taking account of adjusted output formats.
             sOutputFile = "None";
             bool blDone = false;
+            bool blHasExtension = false;
             while (!blDone)
             {
                 sOutputFile = myArcMapFuncs.GetOutputFileName(sOutputFormat, myConfig.GetDefaultExtractPath());
@@ -360,17 +362,20 @@ namespace DataSelector
                 {
                     // firstly check extensions are as should be.
                     string strExtensionTest = sOutputFile.Substring(sOutputFile.Length - 4, 4).Substring(0, 1);
-                    Boolean blHasExtension = false;
                     if (strExtensionTest == ".") blHasExtension = true;
 
                     // if there isn't, put one one.
-                    if (sOutputFormat == "Text file" && !blHasExtension)
+                    if (sOutputFormat == "CSV file" && !blHasExtension)
                     {
                         sOutputFile = sOutputFile + ".csv";
                     }
                     else if (sOutputFormat == "dBASE file" && !blHasExtension)
                     {
                         sOutputFile = sOutputFile + ".dbf";
+                    }
+                    else if (sOutputFormat.Contains("Text file") & !blHasExtension)
+                    {
+                        sOutputFile = sOutputFile + ".txt";
                     }
                     else if (sOutputFormat == "Shapefile" && !blHasExtension)
                     {
@@ -439,7 +444,7 @@ namespace DataSelector
                     else
                     {
                         // Check for dBase and CSV
-                        if (sOutputFormat == "dBASE file")
+                        if (sOutputFormat == "dBASE file" || ((sOutputFormat == "CSV file" || sOutputFormat.Contains("Text file")) & !blHasExtension))
                         // Basically if the user chose a text file with an extension, the dialog will already have given her feedback and we don't need to do this again.
                         {
                             if (myFileFuncs.FileExists(sOutputFile))
@@ -470,7 +475,7 @@ namespace DataSelector
                         else
                             blDone = true;
                     }
-                    else if (sOutputFormat == "dBASE file")
+                    else if (sOutputFormat == "dBASE file" || ((sOutputFormat == "CSV file" || sOutputFormat.Contains("Text file")) & !blHasExtension))
                     // Basically if the user chose a text file, the dialog will already have given her feedback and we don't need to do this again.
                     {
                         if (myFileFuncs.FileExists(sOutputFile))
@@ -612,8 +617,6 @@ namespace DataSelector
             bool blResult = false;
             if (blSpatial && blSuccess) 
             {
-                
-
 
                 // export points and polygons
                 // How is the data to be exported?
@@ -681,7 +684,50 @@ namespace DataSelector
                         return;
                     }
                 }
-                else if (sOutputFormat == "Text file" || sOutputFormat == "dBASE file")
+                
+                else if (sOutputFormat.Contains("Text file"))
+                {
+                    // Not a spatial export, but it is a spatial layer so there are two files.
+                    // Function pulls them back together again.
+
+                    // if schema.ini file exists delete it.
+                    string strIniFile = myFileFuncs.GetDirectoryName(sOutputFile) + "\\schema.ini";
+                    if (myFileFuncs.FileExists(strIniFile))
+                    {
+                        bool blDeleted = myFileFuncs.DeleteFile(strIniFile); // Not checking for success at the moment.
+                    }
+                    blFlatTable = true;
+                    myFileFuncs.WriteLine(strLogFile, "Copying point results to CSV file");
+                    blResult = myArcMapFuncs.CopyToTabDelimitedFile(strPointOutTab, sOutputFile, true, false, true);
+                    if (!blResult)
+                    {
+                        MessageBox.Show("Error exporting output table to text file " + sOutputFile);
+                        myFileFuncs.WriteLine(strLogFile, "Error exporting output table to text file " + sOutputFile);
+                        this.Cursor = Cursors.Default;
+                        myArcMapFuncs.ToggleDrawing();
+                        myArcMapFuncs.ToggleTOC();
+                        this.BringToFront();
+                        return;
+                    }
+                    // Also export the second table - append
+                    myFileFuncs.WriteLine(strLogFile, "Appending polygon results to text file");
+                    blResult = myArcMapFuncs.CopyToTabDelimitedFile(strPolyOutTab, sOutputFile, true, true, true);
+                    if (!blResult)
+                    {
+                        MessageBox.Show("Error appending output table to text file " + sOutputFile);
+                        myFileFuncs.WriteLine(strLogFile, "Error appending output table to text file " + sOutputFile);
+                        this.Cursor = Cursors.Default;
+                        myArcMapFuncs.ToggleDrawing();
+                        myArcMapFuncs.ToggleTOC();
+                        this.BringToFront();
+                    }
+
+                    // Add the output to ArcMap
+                    myFileFuncs.WriteLine(strLogFile, "Adding output to ArcMap view");
+                    myArcMapFuncs.AddTableLayerFromString(sOutputFile, strLayerName);
+                }
+
+                else if (sOutputFormat == "CSV file" || sOutputFormat == "dBASE file")
                 {
                     // Not a spatial export, but it is a spatial layer so there are two files.
                     // Function pulls them back together again.
@@ -700,25 +746,26 @@ namespace DataSelector
                         sFinalFile = sOutputFile;
                         sOutputFile = myFileFuncs.GetDirectoryName(sOutputFile) + "\\Temp.csv";
                     }
-                    myFileFuncs.WriteLine(strLogFile, "Copying point results to text file");
+                    myFileFuncs.WriteLine(strLogFile, "Copying point results to CSV file");
                     blResult = myArcMapFuncs.CopyToCSV(strPointOutTab, sOutputFile, true, false, true);
                     if (!blResult)
                     {
-                        MessageBox.Show("Error exporting output table to text file " + sOutputFile);
-                        myFileFuncs.WriteLine(strLogFile, "Error exporting output table to text file " + sOutputFile);
+                        MessageBox.Show("Error exporting output table to CSV file " + sOutputFile);
+                        myFileFuncs.WriteLine(strLogFile, "Error exporting output table to CSV file " + sOutputFile);
                         this.Cursor = Cursors.Default;
                         myArcMapFuncs.ToggleDrawing();
                         myArcMapFuncs.ToggleTOC();
                         this.BringToFront();
                         return;
                     }
+
                     // Also export the second table - append
-                    myFileFuncs.WriteLine(strLogFile, "Appending polygon results to text file");
+                    myFileFuncs.WriteLine(strLogFile, "Appending polygon results to CSV file");
                     blResult = myArcMapFuncs.CopyToCSV(strPolyOutTab, sOutputFile, true, true, true);
                     if (!blResult)
                     {
-                        MessageBox.Show("Error appending output table to text file " + sOutputFile);
-                        myFileFuncs.WriteLine(strLogFile, "Error appending output table to text file " + sOutputFile);
+                        MessageBox.Show("Error appending output table to CSV file " + sOutputFile);
+                        myFileFuncs.WriteLine(strLogFile, "Error appending output table to CSV file " + sOutputFile);
                         this.Cursor = Cursors.Default;
                         myArcMapFuncs.ToggleDrawing();
                         myArcMapFuncs.ToggleTOC();
@@ -733,13 +780,13 @@ namespace DataSelector
                         // Delete csv file.
                         try
                         {
-                            myFileFuncs.WriteLine(strLogFile, "Deleting temporary text file");
+                            myFileFuncs.WriteLine(strLogFile, "Deleting temporary CSV file");
                             File.Delete(sOutputFile);
                         }
                         catch (Exception ex)
                         {
-                            MessageBox.Show("Error deleting temporary text file: " + ex.Message);
-                            myFileFuncs.WriteLine(strLogFile, "Error deleting temporary text file: " + ex.Message);
+                            MessageBox.Show("Error deleting temporary CSV file: " + ex.Message);
+                            myFileFuncs.WriteLine(strLogFile, "Error deleting temporary CSV file: " + ex.Message);
                             this.Cursor = Cursors.Default;
                             myArcMapFuncs.ToggleDrawing();
                             myArcMapFuncs.ToggleTOC();
@@ -766,11 +813,30 @@ namespace DataSelector
             }
             else if (blSuccess) // Non-spatial query, successfully run.
             {
-                if (sOutputFormat == "Text file")
+                if (sOutputFormat == "CSV file")
+                {
+                    // We are exporting a non-spatial output to CSV file.
+                    myFileFuncs.WriteLine(strLogFile, "Copying results to CSV file");
+                    blResult = myArcMapFuncs.CopyToCSV(strOutTab, sOutputFile, false, false, true);
+                    if (!blResult)
+                    {
+                        MessageBox.Show("Error exporting output table to CSV file " + sOutputFile);
+                        myFileFuncs.WriteLine(strLogFile, "Error exporting output table to CSV file " + sOutputFile);
+                        this.Cursor = Cursors.Default;
+                        myArcMapFuncs.ToggleDrawing();
+                        myArcMapFuncs.ToggleTOC();
+                        this.BringToFront();
+                        return;
+                    }
+                    myFileFuncs.WriteLine(strLogFile, "Adding output to ArcMap view");
+                    myArcMapFuncs.AddTableLayerFromString(sOutputFile, strLayerName);
+                }
+
+                else if (sOutputFormat.Contains("Text file"))
                 {
                     // We are exporting a non-spatial output to text file.
                     myFileFuncs.WriteLine(strLogFile, "Copying results to text file");
-                    blResult = myArcMapFuncs.CopyToCSV(strOutTab, sOutputFile, false, false, true);
+                    blResult = myArcMapFuncs.CopyToTabDelimitedFile(strOutTab, sOutputFile, false, false, true);
                     if (!blResult)
                     {
                         MessageBox.Show("Error exporting output table to text file " + sOutputFile);
@@ -802,7 +868,7 @@ namespace DataSelector
             }
             else if (!blSuccess)
             {
-                if (sOutputFormat == "Text file")
+                if (sOutputFormat == "CSV file")
                 {
                     if (sColumnNames == "*")
                     {

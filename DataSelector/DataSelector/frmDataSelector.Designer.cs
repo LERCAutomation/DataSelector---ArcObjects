@@ -161,8 +161,8 @@
             this.cmbOutFormat.Items.AddRange(new object[] {
             "Geodatabase",
             "Shapefile",
-            "Text file",
-            "dBASE file"});
+            "Text file (tab delimited)",
+            "CSV file"});
             this.cmbOutFormat.Location = new System.Drawing.Point(329, 156);
             this.cmbOutFormat.Name = "cmbOutFormat";
             this.cmbOutFormat.Size = new System.Drawing.Size(206, 21);
@@ -257,7 +257,7 @@
             this.Controls.Add(this.txtColumns);
             this.Controls.Add(this.lblColumns);
             this.Name = "frmDataSelector";
-            this.Text = "Data Selector 1.01";
+            this.Text = "Data Selector 1.0.1";
             this.ResumeLayout(false);
             this.PerformLayout();
 

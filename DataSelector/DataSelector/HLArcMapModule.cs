@@ -1174,6 +1174,101 @@ namespace HLArcMapModule
             return true;
         }
 
+        public bool CopyToTabDelimitedFile(string InTable, string OutTable, bool Spatial, bool Append, bool Messages = false)
+        {
+            // This sub copies the input table to tab delimited file.
+            string aFilePath = myFileFuncs.GetDirectoryName(InTable);
+            string aTabName = myFileFuncs.GetFileName(InTable);
+
+            ICursor myCurs = null;
+            IFields fldsFields = null;
+            if (Spatial)
+            {
+
+                IFeatureClass myFC = GetFeatureClass(aFilePath, aTabName, true);
+                myCurs = (ICursor)myFC.Search(null, false);
+                fldsFields = myFC.Fields;
+            }
+            else
+            {
+                ITable myTable = GetTable(aFilePath, aTabName, true);
+                myCurs = myTable.Search(null, false);
+                fldsFields = myTable.Fields;
+            }
+
+            if (myCurs == null)
+            {
+                if (Messages)
+                {
+                    MessageBox.Show("Cannot open table " + InTable);
+                }
+                return false;
+            }
+
+            // Open output file.
+            StreamWriter theOutput = new StreamWriter(OutTable, Append);
+
+            string strField = null;
+            string strHeader = "";
+            int intFieldCount = fldsFields.FieldCount;
+            int intIgnore = -1;
+
+            // iterate through the fields in the collection to create header.
+            for (int i = 0; i < intFieldCount; i++)
+            {
+                // Get the field at the given index.
+                strField = fldsFields.get_Field(i).Name;
+                if (strField == "SP_GEOMETRY" || strField == "Shape")
+                    intIgnore = i;
+                else
+                    strHeader = strHeader + strField + "\t";
+            }
+            if (!Append)
+            {
+                // Write the header.
+                strHeader = strHeader.Substring(0, strHeader.Length - 1);
+                theOutput.WriteLine(strHeader);
+            }
+            // Now write the file.
+            IRow aRow = myCurs.NextRow();
+            //MessageBox.Show("Writing ...");
+            while (aRow != null)
+            {
+                string strRow = "";
+                for (int i = 0; i < intFieldCount; i++)
+                {
+                    if (i != intIgnore)
+                    {
+                        var theValue = aRow.get_Value(i);
+                        // Wrap value if quotes if it is a string that contains a comma
+                        if ((theValue is string) &&
+                           (theValue.ToString().Contains(","))) theValue = "\"" + theValue.ToString() + "\"";
+                        strRow = strRow + theValue.ToString();
+                        if (i < intFieldCount - 1) strRow = strRow + "\t";
+                    }
+                }
+                theOutput.WriteLine(strRow);
+                aRow = myCurs.NextRow();
+            }
+
+            theOutput.Close();
+            theOutput.Dispose();
+            myCurs = null;
+            aRow = null;
+            return true;
+        }
+
+        public bool WriteEmptyTabDelimitedFile(string OutTable, string theHeader)
+        {
+            // Open output file.
+            StreamWriter theOutput = new StreamWriter(OutTable, false);
+            theHeader.Replace(",", "\t");
+            theOutput.Write(theHeader);
+            theOutput.Close();
+            theOutput.Dispose();
+            return true;
+        }
+
         public void ShowTable(string aTableName, bool Messages = false)
         {
             if (aTableName == null)

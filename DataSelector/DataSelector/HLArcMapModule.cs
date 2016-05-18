@@ -94,31 +94,43 @@ namespace HLArcMapModule
             // This function decides what type of feature workspace factory would be best for this file.
             // it is up to the user to decide whether the file path and file names exist (or should exist).
 
+            // Reworked 18/05/2016 to deal with the singleton issue.
+
             IWorkspaceFactory pWSF;
-            // What type of output file it it? This defines what kind of workspace factory.
+            // What type of output file it it? This defines what kind of workspace factory will be returned.
             if (aFilePath.Substring(aFilePath.Length - 4, 4) == ".gdb")
             {
                 // It is a file geodatabase file.
-                pWSF = new FileGDBWorkspaceFactory();
+                Type t = Type.GetTypeFromProgID("esriDataSourcesGDB.FileGDBWorkspaceFactory");
+                System.Object obj = Activator.CreateInstance(t);
+                pWSF = obj as IWorkspaceFactory;
             }
             else if (aFilePath.Substring(aFilePath.Length - 4, 4) == ".mdb")
             {
                 // Personal geodatabase.
-                pWSF = new AccessWorkspaceFactory();
+                Type t = Type.GetTypeFromProgID("esriDataSourcesGDB.AccessWorkspaceFactory");
+                System.Object obj = Activator.CreateInstance(t);
+                pWSF = obj as IWorkspaceFactory;
             }
             else if (aFilePath.Substring(aFilePath.Length - 4, 4) == ".sde")
             {
                 // ArcSDE connection
-                pWSF = new SdeWorkspaceFactory();
+                Type t = Type.GetTypeFromProgID("esriDataSourcesGDB.SdeWorkspaceFactory");
+                System.Object obj = Activator.CreateInstance(t);
+                pWSF = obj as IWorkspaceFactory;
             }
             else if (aTextFile == true)
             {
                 // Text file
+                //Type t = Type.GetTypeFromProgID("esriDataSourcesOleDB.TextFileWorkspaceFactory");
+                //System.Object obj = Activator.CreateInstance(t);
                 pWSF = new TextFileWorkspaceFactory();
             }
-            else
+            else // Shapefile
             {
-                pWSF = new ShapefileWorkspaceFactory();
+                Type t = Type.GetTypeFromProgID("esriDataSourcesFile.ShapefileWorkspaceFactory");
+                System.Object obj = Activator.CreateInstance(t);
+                pWSF = obj as IWorkspaceFactory;
             }
             return pWSF;
         }
@@ -1334,6 +1346,13 @@ namespace HLArcMapModule
             IEnvelope pEnv = pLayer.AreaOfInterest;
             pEnv.Expand(1.05, 1.05, true);
             activeView.Extent = pEnv;
+            activeView.Refresh();
+        }
+
+        public void ZoomToFullExtent()
+        {
+            IActiveView activeView = GetActiveView();
+            activeView.Extent = activeView.FullExtent;
             activeView.Refresh();
         }
 

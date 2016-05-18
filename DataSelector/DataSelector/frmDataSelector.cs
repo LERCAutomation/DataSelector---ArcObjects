@@ -444,7 +444,7 @@ namespace DataSelector
                     else
                     {
                         // Check for dBase and CSV
-                        if (sOutputFormat == "dBASE file" || ((sOutputFormat == "CSV file" || sOutputFormat.Contains("Text file")) & !blHasExtension))
+                        if (sOutputFormat == "dBASE file" || ((sOutputFormat == "CSV file" || sOutputFormat.Contains("Text file")))) //& !blHasExtension
                         // Basically if the user chose a text file with an extension, the dialog will already have given her feedback and we don't need to do this again.
                         {
                             if (myFileFuncs.FileExists(sOutputFile))
@@ -626,29 +626,35 @@ namespace DataSelector
                     strOutPoints = sOutputFile + "_Point";
                     strOutPolys = sOutputFile + "_Poly";
 
-                    myFileFuncs.WriteLine(strLogFile, "Copying point results to point geodatabase file");
-                    blResult = myArcMapFuncs.CopyFeatures(strPointOutTab, strOutPoints);
-                    if (!blResult)
+                    if (intPointCount > 0)
                     {
-                        MessageBox.Show("Error exporting point geodatabase file");
-                        myFileFuncs.WriteLine(strLogFile, "Error exporting point geodatabase file");
-                        this.Cursor = Cursors.Default;
-                        myArcMapFuncs.ToggleDrawing();
-                        myArcMapFuncs.ToggleTOC();
-                        this.BringToFront();
-                        return;
+                        myFileFuncs.WriteLine(strLogFile, "Copying point results to point geodatabase file");
+                        blResult = myArcMapFuncs.CopyFeatures(strPointOutTab, strOutPoints);
+                        if (!blResult)
+                        {
+                            MessageBox.Show("Error exporting point geodatabase file");
+                            myFileFuncs.WriteLine(strLogFile, "Error exporting point geodatabase file");
+                            this.Cursor = Cursors.Default;
+                            myArcMapFuncs.ToggleDrawing();
+                            myArcMapFuncs.ToggleTOC();
+                            this.BringToFront();
+                            return;
+                        }
                     }
-                    blResult = myArcMapFuncs.CopyFeatures(strPolyOutTab, strOutPolys);
-                    myFileFuncs.WriteLine(strLogFile, "Copying polygon results to polygon geodatabase file");
-                    if (!blResult)
+                    if (intPolyCount > 0)
                     {
-                        MessageBox.Show("Error exporting polygon geodatabase file");
-                        myFileFuncs.WriteLine(strLogFile, "Error exporting polygon geodatabase file");
-                        this.Cursor = Cursors.Default;
-                        myArcMapFuncs.ToggleDrawing();
-                        myArcMapFuncs.ToggleTOC();
-                        this.BringToFront();
-                        return;
+                        blResult = myArcMapFuncs.CopyFeatures(strPolyOutTab, strOutPolys);
+                        myFileFuncs.WriteLine(strLogFile, "Copying polygon results to polygon geodatabase file");
+                        if (!blResult)
+                        {
+                            MessageBox.Show("Error exporting polygon geodatabase file");
+                            myFileFuncs.WriteLine(strLogFile, "Error exporting polygon geodatabase file");
+                            this.Cursor = Cursors.Default;
+                            myArcMapFuncs.ToggleDrawing();
+                            myArcMapFuncs.ToggleTOC();
+                            this.BringToFront();
+                            return;
+                        }
                     }
                     
                 }
@@ -659,29 +665,35 @@ namespace DataSelector
                     strOutPoints = sOutputFile + "_Point.shp";
                     strOutPolys = sOutputFile + "_Poly.shp";
 
-                    myFileFuncs.WriteLine(strLogFile, "Copying point results to point shapefile");
-                    blResult = myArcMapFuncs.CopyFeatures(strPointOutTab, strOutPoints);
-                    if (!blResult)
+                    if (intPointCount > 0)
                     {
-                        MessageBox.Show("Error exporting point shapefile");
-                        myFileFuncs.WriteLine(strLogFile, "Error exporting point shapefile");
-                        this.Cursor = Cursors.Default;
-                        myArcMapFuncs.ToggleDrawing();
-                        myArcMapFuncs.ToggleTOC();
-                        this.BringToFront();
-                        return;
+                        myFileFuncs.WriteLine(strLogFile, "Copying point results to point shapefile");
+                        blResult = myArcMapFuncs.CopyFeatures(strPointOutTab, strOutPoints);
+                        if (!blResult)
+                        {
+                            MessageBox.Show("Error exporting point shapefile");
+                            myFileFuncs.WriteLine(strLogFile, "Error exporting point shapefile");
+                            this.Cursor = Cursors.Default;
+                            myArcMapFuncs.ToggleDrawing();
+                            myArcMapFuncs.ToggleTOC();
+                            this.BringToFront();
+                            return;
+                        }
                     }
-                    myFileFuncs.WriteLine(strLogFile, "Copying polygon results to polygon shapefile");
-                    blResult = myArcMapFuncs.CopyFeatures(strPolyOutTab, strOutPolys);
-                    if (!blResult)
+                    if (intPolyCount > 0)
                     {
-                        MessageBox.Show("Error exporting polygon shapefile");
-                        myFileFuncs.WriteLine(strLogFile, "Error exporting polygon shapefile");
-                        this.Cursor = Cursors.Default;
-                        myArcMapFuncs.ToggleDrawing();
-                        myArcMapFuncs.ToggleTOC();
-                        this.BringToFront();
-                        return;
+                        myFileFuncs.WriteLine(strLogFile, "Copying polygon results to polygon shapefile");
+                        blResult = myArcMapFuncs.CopyFeatures(strPolyOutTab, strOutPolys);
+                        if (!blResult)
+                        {
+                            MessageBox.Show("Error exporting polygon shapefile");
+                            myFileFuncs.WriteLine(strLogFile, "Error exporting polygon shapefile");
+                            this.Cursor = Cursors.Default;
+                            myArcMapFuncs.ToggleDrawing();
+                            myArcMapFuncs.ToggleTOC();
+                            this.BringToFront();
+                            return;
+                        }
                     }
                 }
                 
@@ -697,31 +709,38 @@ namespace DataSelector
                         bool blDeleted = myFileFuncs.DeleteFile(strIniFile); // Not checking for success at the moment.
                     }
                     blFlatTable = true;
-                    myFileFuncs.WriteLine(strLogFile, "Copying point results to CSV file");
-                    blResult = myArcMapFuncs.CopyToTabDelimitedFile(strPointOutTab, sOutputFile, true, false, true);
-                    if (!blResult)
+                    bool blAppend = false;
+                    if (intPointCount > 0)
                     {
-                        MessageBox.Show("Error exporting output table to text file " + sOutputFile);
-                        myFileFuncs.WriteLine(strLogFile, "Error exporting output table to text file " + sOutputFile);
-                        this.Cursor = Cursors.Default;
-                        myArcMapFuncs.ToggleDrawing();
-                        myArcMapFuncs.ToggleTOC();
-                        this.BringToFront();
-                        return;
+                        myFileFuncs.WriteLine(strLogFile, "Copying point results to text file");
+                        blResult = myArcMapFuncs.CopyToTabDelimitedFile(strPointOutTab, sOutputFile, true, false, true);
+                        if (!blResult)
+                        {
+                            MessageBox.Show("Error exporting output table to text file " + sOutputFile);
+                            myFileFuncs.WriteLine(strLogFile, "Error exporting output table to text file " + sOutputFile);
+                            this.Cursor = Cursors.Default;
+                            myArcMapFuncs.ToggleDrawing();
+                            myArcMapFuncs.ToggleTOC();
+                            this.BringToFront();
+                            return;
+                        }
+                        blAppend = true;
                     }
-                    // Also export the second table - append
-                    myFileFuncs.WriteLine(strLogFile, "Appending polygon results to text file");
-                    blResult = myArcMapFuncs.CopyToTabDelimitedFile(strPolyOutTab, sOutputFile, true, true, true);
-                    if (!blResult)
+                    // Also export the second table - append if necessary
+                    if (intPolyCount > 0)
                     {
-                        MessageBox.Show("Error appending output table to text file " + sOutputFile);
-                        myFileFuncs.WriteLine(strLogFile, "Error appending output table to text file " + sOutputFile);
-                        this.Cursor = Cursors.Default;
-                        myArcMapFuncs.ToggleDrawing();
-                        myArcMapFuncs.ToggleTOC();
-                        this.BringToFront();
+                        myFileFuncs.WriteLine(strLogFile, "exporting polygon results to text file");
+                        blResult = myArcMapFuncs.CopyToTabDelimitedFile(strPolyOutTab, sOutputFile, true, blAppend, true);
+                        if (!blResult)
+                        {
+                            MessageBox.Show("Error appending output table to text file " + sOutputFile);
+                            myFileFuncs.WriteLine(strLogFile, "Error appending output table to text file " + sOutputFile);
+                            this.Cursor = Cursors.Default;
+                            myArcMapFuncs.ToggleDrawing();
+                            myArcMapFuncs.ToggleTOC();
+                            this.BringToFront();
+                        }
                     }
-
                     // Add the output to ArcMap
                     myFileFuncs.WriteLine(strLogFile, "Adding output to ArcMap view");
                     myArcMapFuncs.AddTableLayerFromString(sOutputFile, strLayerName);
@@ -746,30 +765,37 @@ namespace DataSelector
                         sFinalFile = sOutputFile;
                         sOutputFile = myFileFuncs.GetDirectoryName(sOutputFile) + "\\Temp.csv";
                     }
-                    myFileFuncs.WriteLine(strLogFile, "Copying point results to CSV file");
-                    blResult = myArcMapFuncs.CopyToCSV(strPointOutTab, sOutputFile, true, false, true);
-                    if (!blResult)
+                    bool blAppend = false;
+                    if (intPointCount > 0)
                     {
-                        MessageBox.Show("Error exporting output table to CSV file " + sOutputFile);
-                        myFileFuncs.WriteLine(strLogFile, "Error exporting output table to CSV file " + sOutputFile);
-                        this.Cursor = Cursors.Default;
-                        myArcMapFuncs.ToggleDrawing();
-                        myArcMapFuncs.ToggleTOC();
-                        this.BringToFront();
-                        return;
+                        myFileFuncs.WriteLine(strLogFile, "Copying point results to CSV file");
+                        blResult = myArcMapFuncs.CopyToCSV(strPointOutTab, sOutputFile, true, false, true);
+                        if (!blResult)
+                        {
+                            MessageBox.Show("Error exporting output table to CSV file " + sOutputFile);
+                            myFileFuncs.WriteLine(strLogFile, "Error exporting output table to CSV file " + sOutputFile);
+                            this.Cursor = Cursors.Default;
+                            myArcMapFuncs.ToggleDrawing();
+                            myArcMapFuncs.ToggleTOC();
+                            this.BringToFront();
+                            return;
+                        }
+                        blAppend = true;
                     }
-
-                    // Also export the second table - append
-                    myFileFuncs.WriteLine(strLogFile, "Appending polygon results to CSV file");
-                    blResult = myArcMapFuncs.CopyToCSV(strPolyOutTab, sOutputFile, true, true, true);
-                    if (!blResult)
+                    // Also export the second table - append if necessary.
+                    if (intPolyCount > 0)
                     {
-                        MessageBox.Show("Error appending output table to CSV file " + sOutputFile);
-                        myFileFuncs.WriteLine(strLogFile, "Error appending output table to CSV file " + sOutputFile);
-                        this.Cursor = Cursors.Default;
-                        myArcMapFuncs.ToggleDrawing();
-                        myArcMapFuncs.ToggleTOC();
-                        this.BringToFront();
+                        myFileFuncs.WriteLine(strLogFile, "Appending polygon results to CSV file");
+                        blResult = myArcMapFuncs.CopyToCSV(strPolyOutTab, sOutputFile, true, blAppend, true);
+                        if (!blResult)
+                        {
+                            MessageBox.Show("Error appending output table to CSV file " + sOutputFile);
+                            myFileFuncs.WriteLine(strLogFile, "Error appending output table to CSV file " + sOutputFile);
+                            this.Cursor = Cursors.Default;
+                            myArcMapFuncs.ToggleDrawing();
+                            myArcMapFuncs.ToggleTOC();
+                            this.BringToFront();
+                        }
                     }
 
                     // If the end output is a dBASE file, export the resulting csv to dBASE.
@@ -921,15 +947,22 @@ namespace DataSelector
                 this.BringToFront();
                 return;
             }
-            // Add the results to the screen.
             
+            // Move the results to the right location or show as appropriate.
             if (!blFlatTable && blSuccess) // Only truly spatial output has two files.
             {
                 myFileFuncs.WriteLine(strLogFile, "Adding output to ArcMap project in group layer " + strLayerName);
-                ILayer lyrPolys = myArcMapFuncs.GetLayer(strLayerName + "_Poly");
-                ILayer lyrPoints = myArcMapFuncs.GetLayer(strLayerName + "_Point");
-                myArcMapFuncs.MoveToGroupLayer(strLayerName, lyrPolys);
-                myArcMapFuncs.MoveToGroupLayer(strLayerName, lyrPoints);
+                if (intPointCount > 0)
+                {
+                    ILayer lyrPoints = myArcMapFuncs.GetLayer(strLayerName + "_Point");
+                    myArcMapFuncs.MoveToGroupLayer(strLayerName, lyrPoints);
+                }
+                if (intPolyCount > 0)
+                {
+                    ILayer lyrPolys = myArcMapFuncs.GetLayer(strLayerName + "_Poly");
+                    myArcMapFuncs.MoveToGroupLayer(strLayerName, lyrPolys);
+                }
+                
             }
             else if (blSuccess)
             {
@@ -942,8 +975,12 @@ namespace DataSelector
             myFileFuncs.WriteLine(strLogFile, "---------------------------------------------------------------------------");
 
             this.Cursor = Cursors.Default;
-            myArcMapFuncs.ToggleDrawing();
             myArcMapFuncs.ToggleTOC();
+            if (!blFlatTable && blSuccess)
+            {
+                myArcMapFuncs.ZoomToFullExtent();
+            }
+            myArcMapFuncs.ToggleDrawing();
             DialogResult dlResult = MessageBox.Show("Process complete. Do you wish to close the form?", "Data Selector", MessageBoxButtons.YesNo);
             if (dlResult == System.Windows.Forms.DialogResult.Yes)
                 this.Close();

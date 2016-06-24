@@ -5,7 +5,7 @@ ArcGIS C# Add-in data extraction tool
 
 Data Selector Tool v1.03
 
-Copyright © 2015 Sussex Biodiversity Records Centre
+Copyright © 2016 Sussex Biodiversity Records Centre
 
 Overview
 --------

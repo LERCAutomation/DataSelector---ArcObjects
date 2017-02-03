@@ -61,7 +61,7 @@ as a spreadsheet.
   <!-- the Include wildcard for table names to list all the species tables in SQL Server that can be selected
          by the user to extract from -->
   <IncludeWildcard>
-	<value>*</value><!--*TVERC_Spp_* -->
+	<value>*TVERC_Spp_*</value><!--*TVERC_Spp_* -->
   </IncludeWildcard>
 
   <!-- the Exclude wildcard for table names that should NOT be used for species tables in SQL Server that can be selected

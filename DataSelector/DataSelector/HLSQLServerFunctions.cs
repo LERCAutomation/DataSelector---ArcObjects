@@ -97,7 +97,7 @@ namespace HLESRISQLServerFunctions
         {
             SqlCommand myCmd = new SqlCommand(aName, aConnection);
             myCmd.CommandType = aCommandType;
-            myCmd.CommandTimeout = 1000; // TimeOut is 1000 seconds.
+            myCmd.CommandTimeout = 4000; // TimeOut is 4000 seconds.
             return myCmd;
         }
 

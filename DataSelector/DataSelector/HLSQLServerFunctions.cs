@@ -93,11 +93,11 @@ namespace HLESRISQLServerFunctions
             return con;
         }
 
-        public SqlCommand CreateSQLCommand(ref SqlConnection aConnection, string aName, CommandType aCommandType)
+        public SqlCommand CreateSQLCommand(ref SqlConnection aConnection, string aName, CommandType aCommandType, int TimeOutSeconds = 4000)
         {
             SqlCommand myCmd = new SqlCommand(aName, aConnection);
             myCmd.CommandType = aCommandType;
-            myCmd.CommandTimeout = 4000; // TimeOut is 4000 seconds.
+            myCmd.CommandTimeout = TimeOutSeconds; 
             return myCmd;
         }
 

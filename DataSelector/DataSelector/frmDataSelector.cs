@@ -308,6 +308,7 @@ namespace DataSelector
 
             SqlConnection dbConn = mySQLServerFuncs.CreateSQLConnection(myConfig.GetConnectionString());
             
+            
             // Decide whether or not there is a geometry field in the returned data.
             // Select the stored procedure accordingly
             string[] strGeometryFields = {"SP_GEOMETRY", "Shape" }; // Expand as required.
@@ -523,7 +524,19 @@ namespace DataSelector
             // Now we are all set to go - do the process.
             // Set up all required parameters.
             //SqlConnection dbConn = myADOFuncs.CreateSQLConnection(myConfig.GetConnectionString());
-            SqlCommand myCommand = mySQLServerFuncs.CreateSQLCommand(ref dbConn, strStoredProcedure, CommandType.StoredProcedure); // Note pass connection by ref here.
+            SqlCommand myCommand = null;
+
+            int iTimeOutSeconds = myConfig.GetTimeoutSeconds();
+            if (iTimeOutSeconds == 0)
+            {
+                // No timeout given so go with default.
+                myCommand = mySQLServerFuncs.CreateSQLCommand(ref dbConn, strStoredProcedure, CommandType.StoredProcedure); // Note pass connection by ref here.
+            }
+            else
+            {
+                myCommand = mySQLServerFuncs.CreateSQLCommand(ref dbConn, strStoredProcedure, CommandType.StoredProcedure, iTimeOutSeconds); 
+            }
+
             mySQLServerFuncs.AddSQLParameter(ref myCommand, "Schema", sDefaultSchema);
             mySQLServerFuncs.AddSQLParameter(ref myCommand, "SpeciesTable", sTableName);
             mySQLServerFuncs.AddSQLParameter(ref myCommand, "ColumnNames", sColumnNames);
@@ -995,12 +1008,6 @@ namespace DataSelector
 
     
         }
-
-        private void button1_Click(object sender, EventArgs e)
-        {
-            Process.Start("notepad.exe", @"H:\Dev\LERCAutomation\DataSelector---ArcObjects\LogFiles\DataSelector_Sony.log");
-            MessageBox.Show("Field names changed");
-               
-        }
+       
     }
 }

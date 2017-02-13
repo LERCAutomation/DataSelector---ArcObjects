@@ -38,6 +38,13 @@ as a spreadsheet.
 	<value>Server=SONY-VAIO\SQLEXPRESS; Database=NBNData_TVERC; Integrated Security=True;</value>
   </ConnectionString>
 
+  <!-- Timeout (seconds) is the maximum number of seconds that the stored procedure is allowed to run . -->
+  <!-- If you are experiencing timeout errors while running the tool, increase this number -->
+  <!-- Default is 4,000 seconds -->
+  <TimeoutSeconds>
+  	<value></value>
+  </TimeoutSeconds>
+
   <!-- The existing file location where extracts will be saved by default -->
   <DefaultExtractPath>
 	<value>H:\Dev\LERCAutomation\DataSelector---ArcObjects\Extracts</value>

@@ -6,4 +6,5 @@ H:\Dev\LERCAutomation\DataSelector---ArcObjects\DataSelector\DataSelector\obj\Re
 H:\Dev\LERCAutomation\DataSelector---ArcObjects\DataSelector\DataSelector\obj\Release\DataSelector.pdb
 H:\Dev\LERCAutomation\DataSelector---ArcObjects\DataSelector\DataSelector\bin\Release\DataSelector.dll.config
 H:\Dev\LERCAutomation\DataSelector---ArcObjects\DataSelector\DataSelector\obj\Release\DataSelector.Properties.Resources.resources
+H:\Dev\LERCAutomation\DataSelector---ArcObjects\DataSelector\DataSelector\obj\Release\DataSelector.csprojResolveAssemblyReference.cache
 H:\Dev\LERCAutomation\DataSelector---ArcObjects\DataSelector\DataSelector\bin\Release\DataSelector.esriAddIn

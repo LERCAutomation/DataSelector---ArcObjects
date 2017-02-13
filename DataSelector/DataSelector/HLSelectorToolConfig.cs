@@ -50,6 +50,7 @@ namespace HLSelectorToolConfig
         string DefaultSetSymbology;
         string LayerLocation;
         string EnableSpatialPlotting; // do not currently need this but keeping for reference.
+        int TimeOutSeconds;
         bool FoundXML;
         bool LoadedXML;
 
@@ -134,6 +135,39 @@ namespace HLSelectorToolConfig
                     LoadedXML = false;
                     return;
                 }
+
+                try
+                {
+                    string strTimeout = xmlDataSelector["TimeoutSeconds"].InnerText;
+                    bool blSuccess;
+
+                    if (strTimeout != "")
+                    {
+
+                        blSuccess = int.TryParse(strTimeout, out TimeOutSeconds);
+                        if (!blSuccess)
+                        {
+                            MessageBox.Show("The value entered for TimeoutSeconds in the XML file is not an integer number");
+                            LoadedXML = false;
+                        }
+                        if (TimeOutSeconds < 0)
+                        {
+                            MessageBox.Show("The value entered for TimeoutSeconds in the XML file is negative");
+                            LoadedXML = false;
+                        }
+                    }
+                    else
+                    {
+                        TimeOutSeconds = 0; // None given.
+                    }
+
+                }
+                catch
+                {
+                    TimeOutSeconds = 0; // We don't really care if it's not in because there's a default anyway.
+                    return;
+                }
+
                 try
                 {
                     DefaultExtractPath = xmlDataSelector["DefaultExtractPath"].InnerText;
@@ -278,6 +312,11 @@ namespace HLSelectorToolConfig
         public string GetConnectionString()
         {
             return ConnectionString;
+        }
+
+        public int GetTimeoutSeconds()
+        {
+            return TimeOutSeconds;
         }
 
         public string GetLogFilePath()

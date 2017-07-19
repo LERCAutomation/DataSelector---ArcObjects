@@ -144,6 +144,7 @@
             this.lstTables.Name = "lstTables";
             this.lstTables.Size = new System.Drawing.Size(206, 95);
             this.lstTables.TabIndex = 10;
+            this.lstTables.DoubleClick += new System.EventHandler(this.lstTables_DoubleClick);
             // 
             // lblOutFormat
             // 
@@ -244,7 +245,7 @@
             this.Controls.Add(this.txtColumns);
             this.Controls.Add(this.lblColumns);
             this.Name = "frmDataSelector";
-            this.Text = "Data Selector 1.1";
+            this.Text = "Data Selector 1.1.1";
             this.ResumeLayout(false);
             this.PerformLayout();
 

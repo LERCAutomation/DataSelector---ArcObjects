@@ -61,10 +61,12 @@ namespace DataSelector
         SQLServerFunctions mySQLServerFuncs;
         FileFunctions myFileFuncs;
         bool blOpenForm; // This tracks all the way through whether the form is initialising correctly.
+        string m_strSaveFile;
         public frmDataSelector()
         {
             InitializeComponent();
             blOpenForm = true;
+            m_strSaveFile = "";
             // Fill with the relevant.
             myConfig = new SelectorToolConfig(); // Should find the config file automatically.
             if (myConfig.GetFoundXML() == false)
@@ -142,6 +144,7 @@ namespace DataSelector
 
             saveFileDialog1.Filter = "Query files (*.qsf)|*.qsf";
             saveFileDialog1.InitialDirectory = myConfig.GetDefaultQueryPath();
+            saveFileDialog1.FileName = m_strSaveFile;
 
             bool blDone = false;
             string strFileName = "";
@@ -205,6 +208,7 @@ namespace DataSelector
 
                 
                 strFileName = openFileDialog1.FileName;
+                m_strSaveFile = myFileFuncs.GetFileName(strFileName);
                 StreamReader qryFile = new StreamReader(strFileName);
                 // read query
                 string qryLine = "";
@@ -1007,6 +1011,38 @@ namespace DataSelector
             dbConn.Dispose();
 
     
+        }
+
+        private void lstTables_DoubleClick(object sender, EventArgs e)
+        {
+            // On double click, the columns belonging to the table name that was double clicked are filled in
+            // in the Columns textbox.
+            // Hester, 19 July 2017.
+            if (lstTables.SelectedItem != null)
+            {
+                if (txtColumns.Text != "")
+                {
+                    DialogResult dlResult1 = MessageBox.Show("There is already text in the Column field. Do you want to overwrite it?", "Data Selector", MessageBoxButtons.YesNo);
+                    if (dlResult1 == System.Windows.Forms.DialogResult.No)
+                        return; //User clicked by accident; leave routine.
+                }
+                string strSelectedTable = lstTables.SelectedItem.ToString();
+                // Open the connection, get the relevant field names as array.
+                SqlConnection dbConn = mySQLServerFuncs.CreateSQLConnection(myConfig.GetConnectionString());
+                dbConn.Open();
+                string[] strFieldNames = mySQLServerFuncs.GetFieldNames(ref dbConn, strSelectedTable);
+                dbConn.Close();
+                // Convert the field names to a single string.
+                string strFieldNamesText = "";
+                foreach (string strFieldName in strFieldNames)
+                {
+                    strFieldNamesText = strFieldNamesText + strFieldName + ",";
+                }
+                strFieldNamesText = strFieldNamesText.Substring(0,strFieldNamesText.Length - 1);
+                // Add the string to the text box.
+                txtColumns.Text = strFieldNamesText;
+            }
+
         }
        
     }

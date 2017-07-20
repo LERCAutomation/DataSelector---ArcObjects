@@ -62,6 +62,7 @@
             this.txtColumns.Location = new System.Drawing.Point(16, 30);
             this.txtColumns.Multiline = true;
             this.txtColumns.Name = "txtColumns";
+            this.txtColumns.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
             this.txtColumns.Size = new System.Drawing.Size(279, 151);
             this.txtColumns.TabIndex = 1;
             // 

@@ -1036,9 +1036,9 @@ namespace DataSelector
                 string strFieldNamesText = "";
                 foreach (string strFieldName in strFieldNames)
                 {
-                    strFieldNamesText = strFieldNamesText + strFieldName + ",";
+                    strFieldNamesText = strFieldNamesText + strFieldName + ",\r\n";
                 }
-                strFieldNamesText = strFieldNamesText.Substring(0,strFieldNamesText.Length - 1);
+                strFieldNamesText = strFieldNamesText.Substring(0,strFieldNamesText.Length - 3);
                 // Add the string to the text box.
                 txtColumns.Text = strFieldNamesText;
             }

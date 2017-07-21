@@ -80,6 +80,7 @@
             this.txtWhere.Location = new System.Drawing.Point(19, 204);
             this.txtWhere.Multiline = true;
             this.txtWhere.Name = "txtWhere";
+            this.txtWhere.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
             this.txtWhere.Size = new System.Drawing.Size(276, 74);
             this.txtWhere.TabIndex = 3;
             // 
@@ -97,6 +98,7 @@
             this.txtGroupBy.Location = new System.Drawing.Point(19, 297);
             this.txtGroupBy.Multiline = true;
             this.txtGroupBy.Name = "txtGroupBy";
+            this.txtGroupBy.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
             this.txtGroupBy.Size = new System.Drawing.Size(276, 68);
             this.txtGroupBy.TabIndex = 5;
             // 
@@ -114,6 +116,7 @@
             this.txtOrderBy.Location = new System.Drawing.Point(19, 385);
             this.txtOrderBy.Multiline = true;
             this.txtOrderBy.Name = "txtOrderBy";
+            this.txtOrderBy.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
             this.txtOrderBy.Size = new System.Drawing.Size(276, 68);
             this.txtOrderBy.TabIndex = 7;
             // 

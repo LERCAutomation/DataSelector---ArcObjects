@@ -8,3 +8,13 @@ H:\Dev\LERCAutomation\DataSelector---ArcObjects\DataSelector\DataSelector\bin\Re
 H:\Dev\LERCAutomation\DataSelector---ArcObjects\DataSelector\DataSelector\obj\Release\DataSelector.Properties.Resources.resources
 H:\Dev\LERCAutomation\DataSelector---ArcObjects\DataSelector\DataSelector\obj\Release\DataSelector.csprojResolveAssemblyReference.cache
 H:\Dev\LERCAutomation\DataSelector---ArcObjects\DataSelector\DataSelector\bin\Release\DataSelector.esriAddIn
+D:\GitHub\DataSelector---ArcObjects\DataSelector\DataSelector\bin\Release\DataSelector.dll.config
+D:\GitHub\DataSelector---ArcObjects\DataSelector\DataSelector\bin\Release\DataSelector.dll
+D:\GitHub\DataSelector---ArcObjects\DataSelector\DataSelector\bin\Release\DataSelector.pdb
+D:\GitHub\DataSelector---ArcObjects\DataSelector\DataSelector\obj\Release\DataSelector.frmChooseConfig.resources
+D:\GitHub\DataSelector---ArcObjects\DataSelector\DataSelector\obj\Release\DataSelector.frmDataSelector.resources
+D:\GitHub\DataSelector---ArcObjects\DataSelector\DataSelector\obj\Release\DataSelector.Properties.Resources.resources
+D:\GitHub\DataSelector---ArcObjects\DataSelector\DataSelector\obj\Release\DataSelector.csproj.GenerateResource.Cache
+D:\GitHub\DataSelector---ArcObjects\DataSelector\DataSelector\obj\Release\DataSelector.dll
+D:\GitHub\DataSelector---ArcObjects\DataSelector\DataSelector\obj\Release\DataSelector.pdb
+D:\GitHub\DataSelector---ArcObjects\DataSelector\DataSelector\bin\Release\DataSelector.esriAddIn

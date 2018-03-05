@@ -1,7 +1,7 @@
 ﻿// DataSelector is an ArcGIS add-in used to extract biodiversity
 // information from SQL Server based on any selection criteria.
 //
-// Copyright © 2016 Sussex Biodiversity Record Centre
+// Copyright © 2016-2017 SxBRC, 2017-2018 TVERC
 //
 // This file is part of DataSelector.
 //

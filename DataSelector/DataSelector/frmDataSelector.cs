@@ -1,8 +1,7 @@
-﻿
-// DataSelector is an ArcGIS add-in used to extract biodiversity
+﻿// DataSelector is an ArcGIS add-in used to extract biodiversity
 // information from SQL Server based on any selection criteria.
 //
-// Copyright © 2016 Sussex Biodiversity Record Centre
+// Copyright © 2016-2017 SxBRC, 2017-2018 TVERC
 //
 // This file is part of DataSelector.
 //
@@ -33,8 +32,11 @@ using System.Diagnostics;
 
 using HLSelectorToolConfig;
 using HLESRISQLServerFunctions;
+using HLStringFunctions;
 using HLArcMapModule;
 using HLFileFunctions;
+using HLSelectorToolLaunchConfig;
+using DataSelector.Properties;
 
 using ESRI.ArcGIS.Geodatabase;
 using ESRI.ArcGIS.GeoDatabaseUI;
@@ -57,28 +59,110 @@ namespace DataSelector
     public partial class frmDataSelector : Form
     {
         SelectorToolConfig myConfig;
+        FileFunctions myFileFuncs;
+        StringFunctions myStringFuncs;
+        ArcMapFunctions myArcMapFuncs;
         ArcSDEFunctions myArcSDEFuncs;
         SQLServerFunctions mySQLServerFuncs;
-        FileFunctions myFileFuncs;
+        SelectorToolLaunchConfig myLaunchConfig;
         bool blOpenForm; // This tracks all the way through whether the form is initialising correctly.
         string m_strSaveFile;
+
         public frmDataSelector()
         {
-            InitializeComponent();
             blOpenForm = true;
+            InitializeComponent();
+            myLaunchConfig = new SelectorToolLaunchConfig();
+            myFileFuncs = new FileFunctions();
+            string strConfigFile = "";
+            if (!myLaunchConfig.XMLFound)
+            {
+                MessageBox.Show("XML file 'DataSelector.xml' not found; form cannot load.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                blOpenForm = false;
+            }
+            if (!myLaunchConfig.XMLLoaded)
+            {
+                MessageBox.Show("Error loading XML File 'DataSelector.xml'; form cannot load.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                blOpenForm = false;
+            }
+
+            if (blOpenForm)
+            {
+                string strXMLFolder = myFileFuncs.GetDirectoryName(Settings.Default.XMLFile);
+                bool blOnlyDefault = true;
+                int intCount = 0;
+                if (myLaunchConfig.ChooseConfig) // If we are allowed to choose, check if there are multiple profiles. 
+                // If there is only the default XML file in the directory, launch the form. Otherwise the user has to choose.
+                {
+                    foreach (string strFileName in myFileFuncs.GetAllFilesInDirectory(strXMLFolder))
+                    {
+                        if (myFileFuncs.GetFileName(strFileName).ToLower() != "dataselector.xml" && myFileFuncs.GetExtension(strFileName).ToLower() == "xml")
+                        {
+                            // is it the default?
+                            intCount++;
+                            if (myFileFuncs.GetFileName(strFileName) != myLaunchConfig.DefaultXML)
+                            {
+                                blOnlyDefault = false;
+                            }
+                        }
+                    }
+                    if (intCount > 1)
+                    {
+                        blOnlyDefault = false;
+                    }
+                }
+                if (myLaunchConfig.ChooseConfig && !blOnlyDefault)
+                {
+                    // User has to choose the configuration file first.
+
+                    using (var myConfigForm = new frmChooseConfig(strXMLFolder, myLaunchConfig.DefaultXML))
+                    {
+                        var result = myConfigForm.ShowDialog();
+                        if (result == System.Windows.Forms.DialogResult.OK)
+                        {
+                            strConfigFile = strXMLFolder + "\\" + myConfigForm.ChosenXMLFile;
+                        }
+                        else
+                        {
+                            MessageBox.Show("No XML file was chosen; form cannot load.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            blOpenForm = false;
+                        }
+                    }
+
+                }
+                else
+                {
+                    strConfigFile = strXMLFolder + "\\" + myLaunchConfig.DefaultXML; // don't allow the user to choose, just use the default.
+                    // Just check it exists, though.
+                    if (!myFileFuncs.FileExists(strConfigFile))
+                    {
+                        MessageBox.Show("The default XML file '" + myLaunchConfig.DefaultXML + "' was not found in the XML directory; form cannot load.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        blOpenForm = false;
+                    }
+                }
+            }
+
+            if (blOpenForm)
+            {
+                myConfig = new SelectorToolConfig(strConfigFile); // Must now pass the correct XML name.
+                IApplication pApp = ArcMap.Application;
+                myArcMapFuncs = new ArcMapFunctions(pApp);
+                myStringFuncs = new StringFunctions();
+
+                // Get the relevant from the Config file.
+                if (myConfig.GetFoundXML() == false)
+                {
+                    MessageBox.Show("XML file not found; form cannot load.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    blOpenForm = false;
+                }
+                else if (myConfig.GetLoadedXML() == false)
+                {
+                    MessageBox.Show("Error loading XML File; form cannot load.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    blOpenForm = false;
+                }
+            }
+
             m_strSaveFile = "";
-            // Fill with the relevant.
-            myConfig = new SelectorToolConfig(); // Should find the config file automatically.
-            if (myConfig.GetFoundXML() == false)
-            {
-                MessageBox.Show("XML file not found; form cannot load.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                blOpenForm = false;
-            }
-            else if (myConfig.GetLoadedXML() == false)
-            {
-                MessageBox.Show("Error loading XML File; form cannot load.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                blOpenForm = false;
-            }
 
             myArcSDEFuncs = new ArcSDEFunctions();
             mySQLServerFuncs = new SQLServerFunctions();
@@ -112,9 +196,11 @@ namespace DataSelector
                 string strIncludeWildcard = myConfig.GetIncludeWildcard();
                 string strExcludeWildcard = myConfig.GetExcludeWildcard();
                 string strDefaultFormat = myConfig.GetDefaultFormat();
+                bool chkClearLog = myConfig.GetDefaultClearLogFile();
 
                 cmbOutFormat.Text = strDefaultFormat;
-                
+                chkLogFile.Checked = chkClearLog;
+
                 List<string> strTableList = myArcSDEFuncs.GetTableNames(wsSQLWorkspace, strIncludeWildcard, strExcludeWildcard);
                 foreach (string strItem in strTableList)
                 {
@@ -126,10 +212,10 @@ namespace DataSelector
             }
             else // Something has gone wrong during initialisation; don't load form.
             {
-                    Load += (s, e) => Close();
-                    return;
+                Load += (s, e) => Close();
+                return;
             }
-            
+
         }
 
         private void btnCancel_Click(object sender, EventArgs e)
@@ -153,6 +239,8 @@ namespace DataSelector
                 if (saveFileDialog1.ShowDialog() == DialogResult.OK)
                 {
                     strFileName = saveFileDialog1.FileName;
+                    // Save the query name ready for future saves
+                    m_strSaveFile = myFileFuncs.GetFileName(strFileName);
 
                     string strExtension = strFileName.Substring(strFileName.Length - 4, 4);
                     if (strExtension.Substring(0, 1) != ".")
@@ -170,14 +258,14 @@ namespace DataSelector
                     MessageBox.Show("Please select an output file");
                     return;
                 }
-                
+
             }
             StreamWriter qryFile = File.CreateText(strFileName);
             // Write query
 
-            string strColumns = "Fields {" + txtColumns.Text.Replace("\r\n", "$$")  + "}";
+            string strColumns = "Fields {" + txtColumns.Text.Replace("\r\n", "$$") + "}";
             string strWhere = "Where {" + txtWhere.Text.Replace("\r\n", "$$") + "}";
-            string strGroupBy = "Group By {" + txtGroupBy.Text.Replace("\r\n", "$$")  + "}";
+            string strGroupBy = "Group By {" + txtGroupBy.Text.Replace("\r\n", "$$") + "}";
             string strOrderBy = "Order By {" + txtOrderBy.Text.Replace("\r\n", "$$") + "}";
             qryFile.WriteLine(strColumns);
             qryFile.WriteLine(strWhere);
@@ -206,15 +294,16 @@ namespace DataSelector
                 txtGroupBy.Text = "";
                 txtOrderBy.Text = "";
 
-                
                 strFileName = openFileDialog1.FileName;
+                // Save the query name ready for future saves
                 m_strSaveFile = myFileFuncs.GetFileName(strFileName);
+
                 StreamReader qryFile = new StreamReader(strFileName);
                 // read query
                 string qryLine = "";
                 while ((qryLine = qryFile.ReadLine()) != null)
                 {
-                    if (qryLine.Length > 7 && qryLine.Substring(0,8).ToUpper() == "FIELDS {" && qryLine.ToUpper() != "FIELDS {}")
+                    if (qryLine.Length > 7 && qryLine.Substring(0, 8).ToUpper() == "FIELDS {" && qryLine.ToUpper() != "FIELDS {}")
                     {
                         qryLine = qryLine.Substring(8, qryLine.Length - 9);
                         txtColumns.Text = qryLine.Replace("$$", "\r\n");
@@ -237,28 +326,27 @@ namespace DataSelector
                 }
                 qryFile.Close();
                 qryFile.Dispose();
-                
+
             }
-            
+
 
         }
 
         private void btnOK_Click(object sender, EventArgs e)
         {
             this.Cursor = Cursors.WaitCursor;
-            IApplication theApplication = (IApplication)ArcMap.Application;
-            ArcMapFunctions myArcMapFuncs = new ArcMapFunctions(theApplication);
-            
+
             // Run the query. Everything else is allowed to be null.
             string sDefaultSchema = myConfig.GetDatabaseSchema();
-            string sTableName = lstTables.Text; 
-            string sColumnNames = txtColumns.Text; 
-            string sWhereClause = txtWhere.Text; 
-            string sGroupClause = txtGroupBy.Text; 
+            string sTableName = lstTables.Text;
+            string sColumnNames = txtColumns.Text;
+            string sWhereClause = txtWhere.Text;
+            string sGroupClause = txtGroupBy.Text;
             string sOrderClause = txtOrderBy.Text;
             string sOutputFormat = cmbOutFormat.Text;
             string sOutputFile;
-            string sUserID = Environment.UserName;
+            // fix any illegal characters in the user name string
+            string sUserID = myStringFuncs.StripIllegals(Environment.UserName, "_", false);
 
             string strLogFile = myConfig.GetLogFilePath() + @"\DataSelector_" + sUserID + ".log";
             if (chkLogFile.Checked)
@@ -311,11 +399,11 @@ namespace DataSelector
             }
 
             SqlConnection dbConn = mySQLServerFuncs.CreateSQLConnection(myConfig.GetConnectionString());
-            
-            
+
+
             // Decide whether or not there is a geometry field in the returned data.
             // Select the stored procedure accordingly
-            string[] strGeometryFields = {"SP_GEOMETRY", "Shape" }; // Expand as required.
+            string[] strGeometryFields = { "SP_GEOMETRY", "Shape" }; // Expand as required.
             bool blSpatial = false;
             foreach (string strField in strGeometryFields)
             {
@@ -494,12 +582,12 @@ namespace DataSelector
                     }
                     else
                         blDone = true; // Text file; already checked by dialog.
-                    
+
                 }
-                    
+
             }
             this.BringToFront();
-            
+
             if (sOutputFile == "None")
             {
                 // User has pressed Cancel. Bring original menu to the front.
@@ -519,7 +607,7 @@ namespace DataSelector
 
 
             string strLayerName = myFileFuncs.GetFileName(sOutputFile);
-            
+
             if (!sOutputFormat.Contains("Geodatabase"))
             {
                 strLayerName = myFileFuncs.ReturnWithoutExtension(strLayerName);
@@ -538,7 +626,7 @@ namespace DataSelector
             }
             else
             {
-                myCommand = mySQLServerFuncs.CreateSQLCommand(ref dbConn, strStoredProcedure, CommandType.StoredProcedure, iTimeOutSeconds); 
+                myCommand = mySQLServerFuncs.CreateSQLCommand(ref dbConn, strStoredProcedure, CommandType.StoredProcedure, iTimeOutSeconds);
             }
 
             mySQLServerFuncs.AddSQLParameter(ref myCommand, "Schema", sDefaultSchema);
@@ -568,7 +656,7 @@ namespace DataSelector
                 myFileFuncs.WriteLine(strLogFile, "Data is spatial and will be split into a point and a polygon layer");
             else
                 myFileFuncs.WriteLine(strLogFile, "Data is not spatial and will not be split");
-            
+
 
             // Open SQL connection to database and
             // Run the stored procedure.
@@ -624,20 +712,20 @@ namespace DataSelector
 
             // convert the results to the designated output file.
             string strPointOutTab = myConfig.GetSDEName() + @"\" + strPointFC;
-            string strPolyOutTab = myConfig.GetSDEName() + @"\" + strPolyFC; 
-            string strOutTab = myConfig.GetSDEName() + @"\" + strTable; 
+            string strPolyOutTab = myConfig.GetSDEName() + @"\" + strPolyFC;
+            string strOutTab = myConfig.GetSDEName() + @"\" + strTable;
 
             string strOutPoints = "";
             string strOutPolys = "";
 
 
             bool blResult = false;
-            if (blSpatial && blSuccess) 
+            if (blSpatial && blSuccess)
             {
 
                 // export points and polygons
                 // How is the data to be exported?
-                if (sOutputFormat == "Geodatabase FC") 
+                if (sOutputFormat == "Geodatabase FC")
                 {
                     // Easy, export without further ado.
                     strOutPoints = sOutputFile + "_Point";
@@ -673,7 +761,7 @@ namespace DataSelector
                             return;
                         }
                     }
-                    
+
                 }
                 else if (sOutputFormat == "Shapefile" & blSuccess)
                 {
@@ -713,7 +801,7 @@ namespace DataSelector
                         }
                     }
                 }
-                
+
                 else if (sOutputFormat.Contains("Text file"))
                 {
                     // Not a spatial export, but it is a spatial layer so there are two files.
@@ -936,7 +1024,7 @@ namespace DataSelector
                     myFileFuncs.WriteLine(strLogFile, "There were no results for the query. No output has been created");
                 }
             }
-            
+
             // Delete the temporary tables in the SQL database
             strStoredProcedure = "AFClearSppSubset";
             SqlCommand myCommand2 = mySQLServerFuncs.CreateSQLCommand(ref dbConn, strStoredProcedure, CommandType.StoredProcedure); // Note pass connection by ref here.
@@ -964,7 +1052,7 @@ namespace DataSelector
                 this.BringToFront();
                 return;
             }
-            
+
             // Move the results to the right location or show as appropriate.
             if (!blFlatTable && blSuccess) // Only truly spatial output has two files.
             {
@@ -979,7 +1067,7 @@ namespace DataSelector
                     ILayer lyrPolys = myArcMapFuncs.GetLayer(strLayerName + "_Poly");
                     myArcMapFuncs.MoveToGroupLayer(strLayerName, lyrPolys);
                 }
-                
+
             }
             else if (blSuccess)
             {
@@ -1010,7 +1098,7 @@ namespace DataSelector
             myCommand2.Dispose();
             dbConn.Dispose();
 
-    
+
         }
 
         private void lstTables_DoubleClick(object sender, EventArgs e)
@@ -1038,12 +1126,12 @@ namespace DataSelector
                 {
                     strFieldNamesText = strFieldNamesText + strFieldName + ",\r\n";
                 }
-                strFieldNamesText = strFieldNamesText.Substring(0,strFieldNamesText.Length - 3);
+                strFieldNamesText = strFieldNamesText.Substring(0, strFieldNamesText.Length - 3);
                 // Add the string to the text box.
                 txtColumns.Text = strFieldNamesText;
             }
 
         }
-       
+
     }
 }

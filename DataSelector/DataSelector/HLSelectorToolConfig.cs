@@ -1,7 +1,7 @@
 ﻿// DataSelector is an ArcGIS add-in used to extract biodiversity
 // information from SQL Server based on any selection criteria.
 //
-// Copyright © 2016 Sussex Biodiversity Record Centre
+// Copyright © 2016-2017 SxBRC, 2017-2018 TVERC
 //
 // This file is part of DataSelector.
 //
@@ -24,10 +24,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Xml;
-
 using System.Windows.Forms;
-using HLFileFunctions;
+
 using DataSelector.Properties;
+using HLFileFunctions;
+using HLStringFunctions;
 
 
 // This module reads the config XML file and stores the results
@@ -50,56 +51,41 @@ namespace HLSelectorToolConfig
         string DefaultSetSymbology;
         string LayerLocation;
         string EnableSpatialPlotting; // do not currently need this but keeping for reference.
+        bool DefaultClearLogFile;
         int TimeOutSeconds;
         bool FoundXML;
         bool LoadedXML;
 
-
         // Initialise component - read XML
         FileFunctions myFileFuncs;
+        StringFunctions myStringFuncs;
         XmlElement xmlDataSelector;
-        public SelectorToolConfig()
+        public SelectorToolConfig(string anXMLProfile)
         {
             // Open xml
             myFileFuncs = new FileFunctions();
-            string strXMLFile = null;
-            bool blFoundXML = false;
+            myStringFuncs = new StringFunctions();
+            string strXMLFile = anXMLProfile; // The user has specified this and we've checked it exists.
+            FoundXML = true; // In this version we have already checked that it exists.
             LoadedXML = true;
-            try
-            {
-                // Get the XML file
-                strXMLFile = Settings.Default.XMLFile;
-
-                // If the XML file path is blank or doesn't exist
-                if (String.IsNullOrEmpty(strXMLFile) || (!myFileFuncs.FileExists(strXMLFile)))
-                {
-                    // Prompt the user for the correct file path
-                    string strFolder = GetConfigFilePath();
-                    if (!String.IsNullOrEmpty(strFolder))
-                        strXMLFile = strFolder + @"\DataSelector.xml";
-                }
-
-                // Check the xml file path exists
-                if (myFileFuncs.FileExists(strXMLFile))
-                {
-                    Settings.Default.XMLFile = strXMLFile;
-                    Settings.Default.Save();
-                    blFoundXML = true;
-                }
-
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.Message, "Error " + ex.ToString(), MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-            
+            // Now get all the config variables.
             // Read the file.
-            if (blFoundXML)
+            if (FoundXML)
             {
-                FoundXML = true;
-                XmlDocument xmlConfig = new XmlDocument();
-                xmlConfig.Load(strXMLFile);
 
+                XmlDocument xmlConfig = new XmlDocument();
+                try
+                {
+                    xmlConfig.Load(strXMLFile);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("Error in XML file; cannot load. System error message: " + ex.Message, "XML Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    LoadedXML = false;
+                    return;
+                }
+
+                string strRawText;
                 XmlNode currNode = xmlConfig.DocumentElement.FirstChild; // This gets us the DataSelector.
                 xmlDataSelector = (XmlElement)currNode;
 
@@ -267,6 +253,20 @@ namespace HLSelectorToolConfig
                     MessageBox.Show("Could not locate the item 'EnableSpatialPlotting' in the XML file");
                     LoadedXML = false;
                 }
+                try
+                {
+                    DefaultClearLogFile = false;
+                    strRawText = xmlDataSelector["DefaultClearLogFile"].InnerText;
+                    if (strRawText.ToLower() == "yes" || strRawText.ToLower() == "y")
+                        DefaultClearLogFile = true;
+                }
+                catch
+                {
+                    MessageBox.Show("Could not locate the item 'DefaultClearLogFile' in the XML file", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    LoadedXML = false;
+                    return;
+                }
+
             }
             else
             {
@@ -372,6 +372,11 @@ namespace HLSelectorToolConfig
         public string GetEnableSpatialPlotting()
         {
             return EnableSpatialPlotting;
+        }
+
+        public bool GetDefaultClearLogFile()
+        {
+            return DefaultClearLogFile;
         }
 
 

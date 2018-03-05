@@ -1,22 +1,24 @@
 ﻿<ESRI.Configuration xmlns="http://schemas.esri.com/Desktop/AddIns" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <Name>DataSelector</Name>
   <AddInID>{b858bb02-f5c6-4c49-886a-96f8d918d8a7}</AddInID>
-  <Description>Data selection tool designed for Sussex Environmental Records Centre.</Description>
-  <Version>1.0</Version>
+  <Description>Data Selector tool. (c) 2016-2017 SxBRC, 2017-2018 TVERC.</Description>
+  <Version>1.2</Version>
   <Image>Images\DataSelector.png</Image>
   <Author>Hester Lyons</Author>
   <Company>Hester Lyons Consulting</Company>
-  <Date>08/03/2016</Date>
+  <Date>04/03/2018</Date>
   <Targets>
     <Target name="Desktop" version="10.2" />
   </Targets>
   <AddIn language="CLR" library="DataSelector.dll" namespace="DataSelector">
     <ArcMap>
       <Commands>
-        <Button id="Hester_Lyons_Consulting_DataSelector_Button1" class="LaunchDataSelector" 
-                message="Data selector tool. Define, load, save and run SQL query. Results are shown in ArcMap and saved locally." 
+        <Button id="Hester_Lyons_Consulting_DataSelector"
+                class="DataSelector" 
+                message="Define, load, save and run SQL query. Results are shown in ArcMap and saved locally." 
                 caption="Data Selector" 
-                tip="Launch data selector" category="Add-In Controls" image="Images\Button1.png" />
+                tip="Data Selector tool"
+                category="Add-In Controls" image="Images\Button1.png" />
       </Commands>
     </ArcMap>
   </AddIn>

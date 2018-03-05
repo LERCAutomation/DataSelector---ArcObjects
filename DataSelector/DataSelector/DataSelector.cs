@@ -2,15 +2,14 @@
 using System.Collections.Generic;
 using System.Text;
 using System.IO;
-using System.Windows.Forms;
 
 using ESRI.ArcGIS.ArcMapUI;
 
 namespace DataSelector
 {
-    public class LaunchDataSelector : ESRI.ArcGIS.Desktop.AddIns.Button
+    public class DataSelector : ESRI.ArcGIS.Desktop.AddIns.Button
     {
-        public LaunchDataSelector()
+        public DataSelector()
         {
         }
 
@@ -21,7 +20,8 @@ namespace DataSelector
             //
             frmDataSelector frmMyForm;
             frmMyForm = new frmDataSelector();
-            frmMyForm.Show();
+            //frmMyForm.Show();
+            frmMyForm.ShowDialog();
 
             ArcMap.Application.CurrentTool = null;
         }

@@ -1,7 +1,7 @@
 ﻿// DataSelector is an ArcGIS add-in used to extract biodiversity
 // information from SQL Server based on any selection criteria.
 //
-// Copyright © 2016 Sussex Biodiversity Record Centre
+// Copyright © 2016-2017 SxBRC, 2017-2018 TVERC
 //
 // This file is part of DataSelector.
 //
@@ -45,7 +45,9 @@ namespace HLFileFunctions
 
             // split at the last \
             int LastIndex = aFullPath.LastIndexOf(@"\");
-            string aPath = aFullPath.Substring(0, LastIndex);
+            string aPath = aFullPath;
+            if (LastIndex > -1)
+                aPath = aFullPath.Substring(0, LastIndex);
             return aPath;
         }
 
@@ -88,10 +90,34 @@ namespace HLFileFunctions
 
             // split at the last \
             int LastIndex = aFullPath.LastIndexOf(@"\");
-            string aFile = aFullPath.Substring(LastIndex + 1, aFullPath.Length - (LastIndex + 1));
+            string aFile = aFullPath;
+            if (LastIndex > -1)
+                aFile = aFullPath.Substring(LastIndex + 1, aFullPath.Length - (LastIndex + 1));
             return aFile;
         }
 
+        public string GetExtension(string aFullPath)
+        {
+            if (aFullPath == null) return null;
+
+            // get the last three letters.
+            string anExtension = aFullPath.Substring(aFullPath.Length - 3, 3);
+            return anExtension;
+        }
+
+        public List<string> GetAllFilesInDirectory(string aPath)
+        {
+            List<string> myFileList = new List<string>();
+            if (DirExists(aPath))
+            {
+                string[] fileEntries = Directory.GetFiles(aPath);
+                foreach (string aFile in fileEntries)
+                {
+                    myFileList.Add(aFile);
+                }
+            }
+            return myFileList;
+        }
         public string ReturnWithoutExtension(string aFileName)
         {
             // check input

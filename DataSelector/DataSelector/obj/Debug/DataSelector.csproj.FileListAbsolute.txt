@@ -14,6 +14,7 @@ D:\GitHub\DataSelector---ArcObjects\DataSelector\DataSelector\obj\Debug\DataSele
 D:\GitHub\DataSelector---ArcObjects\DataSelector\DataSelector\obj\Debug\DataSelector.csproj.GenerateResource.Cache
 D:\GitHub\DataSelector---ArcObjects\DataSelector\DataSelector\obj\Debug\DataSelector.dll
 D:\GitHub\DataSelector---ArcObjects\DataSelector\DataSelector\obj\Debug\DataSelector.pdb
-D:\GitHub\DataSelector---ArcObjects\DataSelector\DataSelector\bin\Debug\DataSelector.esriAddIn
 H:\Dev\LERCAutomation\DataSelector---ArcObjects\DataSelector\DataSelector\bin\Debug\DataSelector.dll.config
 H:\Dev\LERCAutomation\DataSelector---ArcObjects\DataSelector\DataSelector\bin\Debug\DataSelector.esriAddIn
+D:\GitHub\DataSelector---ArcObjects\DataSelector\DataSelector\obj\Debug\DataSelector.frmChooseConfig.resources
+D:\GitHub\DataSelector---ArcObjects\DataSelector\DataSelector\bin\Debug\DataSelector.esriAddIn

@@ -414,7 +414,7 @@ namespace DataSelector
             // If "*" is used check for the existence of a geometry field in the table.
             if (sColumnNames == "*")
             {
-                string strCheckTable = myConfig.GetDatabaseSchema() + "." + sTableName;
+                string strCheckTable = sDefaultSchema + "." + sTableName;
                 dbConn.Open();
                 foreach (string strField in strGeometryFields)
                 {
@@ -427,9 +427,9 @@ namespace DataSelector
             // Set the temporary table names and the stored procedure names. Adjust output formats if required.
             bool blFlatTable = !blSpatial; // to start with
             string strStoredProcedure = "AFSelectSppSubset"; // Default for all data
-            string strPolyFC = sTableName + "_poly_" + sUserID; ;
-            string strPointFC = sTableName + "_point_" + sUserID;
-            string strTable = sTableName + "_" + sUserID;
+            string strPolyFC = sDefaultSchema + "." + sTableName + "_poly_" + sUserID; ;
+            string strPointFC = sDefaultSchema + "." + sTableName + "_point_" + sUserID;
+            string strTable = sDefaultSchema + "." + sTableName + "_" + sUserID;
             string strSplit = "0";
 
             if (blSpatial)

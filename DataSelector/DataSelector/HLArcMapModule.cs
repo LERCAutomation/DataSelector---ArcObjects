@@ -452,11 +452,40 @@ namespace HLArcMapModule
             }
 
             IWorkspaceFactory pWSF = GetWorkspaceFactory(aFilePath, blText);
-            IFeatureWorkspace pWS = (IFeatureWorkspace)pWSF.OpenFromFile(aFilePath, 0);
-            ITable pTable = pWS.OpenTable(aDatasetName);
-            if (pTable == null)
+
+            if (pWSF == null)
             {
-                if (Messages) MessageBox.Show("The file " + aDatasetName + " doesn't exist in this location", "Open Table from Disk");
+                if (Messages)
+                {
+                    MessageBox.Show("Workspace factory is null");
+                    return null;
+                }
+            }
+            
+            IFeatureWorkspace pWS = (IFeatureWorkspace)pWSF.OpenFromFile(aFilePath, 0);
+
+            if (pWS == null)
+            {
+                if (Messages)
+                {
+                    MessageBox.Show("Workspace is null");
+                    return null;
+                }
+            }
+
+            ITable pTable = null;
+            try
+            {
+                pTable = pWS.OpenTable(aDatasetName);
+                if (pTable == null)
+                {
+                    if (Messages) MessageBox.Show("The file " + aDatasetName + " doesn't exist in this location", "Open Table from Disk");
+                    return null;
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return null;
             }
             return pTable;
@@ -861,10 +890,10 @@ namespace HLArcMapModule
                 case "Shapefile":
                     myFilter = new GxFilterShapefiles();
                     break;
-                case "DBASE file":
+                case "dBASE file":
                     myFilter = new GxFilterdBASEFiles();
                     break;
-                case "Text file":
+                case "Text file (tab delimited)":
                     myFilter = new GxFilterTextFiles();
                     break;
                 default:
@@ -947,7 +976,7 @@ namespace HLArcMapModule
         {
             // This works absolutely fine for dbf and geodatabase but does not export to CSV.
 
-            // Note the csv export already removes ghe geometry field; in this case it is not necessary to check again.
+            // Note the csv export already removes the geometry field; in this case it is not necessary to check again.
 
             ESRI.ArcGIS.Geoprocessor.Geoprocessor gp = new ESRI.ArcGIS.Geoprocessor.Geoprocessor();
             gp.OverwriteOutput = true;
@@ -1097,7 +1126,7 @@ namespace HLArcMapModule
             // This sub copies the input table to CSV.
             string aFilePath = myFileFuncs.GetDirectoryName(InTable);
             string aTabName = myFileFuncs.GetFileName(InTable);
-            
+
             ICursor myCurs = null;
             IFields fldsFields = null;
             if (Spatial)
@@ -1110,6 +1139,16 @@ namespace HLArcMapModule
             else
             {
                 ITable myTable = GetTable(aFilePath, aTabName, true);
+
+                if (myTable == null)
+                {
+                    if (Messages)
+                    {
+                        MessageBox.Show("Table not found " + InTable);
+                    }
+                    return false;
+                }
+
                 myCurs = myTable.Search(null, false);
                 fldsFields = myTable.Fields;
             }

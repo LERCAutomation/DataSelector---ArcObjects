@@ -38,98 +38,98 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="ESRI.ArcGIS.ArcMapUI, Version=10.2.0.0, Culture=neutral, PublicKeyToken=8fc3cc631e44ad86, processorArchitecture=MSIL">
-      <HintPath>..\..\..\ArcGIS-Libraries\DeveloperKit10.2\DotNet\ESRI.ArcGIS.ArcMapUI.dll</HintPath>
       <SpecificVersion>False</SpecificVersion>
+      <EmbedInteropTypes>True</EmbedInteropTypes>
+      <HintPath>..\..\..\ArcGIS-Libraries\DeveloperKit10.1\DotNet\ESRI.ArcGIS.ArcMapUI.dll</HintPath>
       <Private>False</Private>
-      <EmbedInteropTypes>False</EmbedInteropTypes>
     </Reference>
     <Reference Include="ESRI.ArcGIS.Carto, Version=10.2.0.0, Culture=neutral, PublicKeyToken=8fc3cc631e44ad86, processorArchitecture=MSIL">
-      <HintPath>..\..\..\ArcGIS-Libraries\DeveloperKit10.2\DotNet\ESRI.ArcGIS.Carto.dll</HintPath>
       <SpecificVersion>False</SpecificVersion>
-      <Private>False</Private>
       <EmbedInteropTypes>True</EmbedInteropTypes>
+      <HintPath>..\..\..\ArcGIS-Libraries\DeveloperKit10.1\DotNet\ESRI.ArcGIS.Carto.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="ESRI.ArcGIS.Catalog, Version=10.2.0.0, Culture=neutral, PublicKeyToken=8fc3cc631e44ad86, processorArchitecture=MSIL">
-      <HintPath>..\..\..\ArcGIS-Libraries\DeveloperKit10.2\DotNet\ESRI.ArcGIS.Catalog.dll</HintPath>
       <SpecificVersion>False</SpecificVersion>
-      <Private>False</Private>
       <EmbedInteropTypes>True</EmbedInteropTypes>
+      <HintPath>..\..\..\ArcGIS-Libraries\DeveloperKit10.1\DotNet\ESRI.ArcGIS.Catalog.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="ESRI.ArcGIS.CatalogUI, Version=10.2.0.0, Culture=neutral, PublicKeyToken=8fc3cc631e44ad86, processorArchitecture=MSIL">
-      <HintPath>..\..\..\ArcGIS-Libraries\DeveloperKit10.2\DotNet\ESRI.ArcGIS.CatalogUI.dll</HintPath>
       <SpecificVersion>False</SpecificVersion>
-      <Private>False</Private>
       <EmbedInteropTypes>True</EmbedInteropTypes>
+      <HintPath>..\..\..\ArcGIS-Libraries\DeveloperKit10.1\DotNet\ESRI.ArcGIS.CatalogUI.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="ESRI.ArcGIS.DataSourcesFile, Version=10.2.0.0, Culture=neutral, PublicKeyToken=8fc3cc631e44ad86, processorArchitecture=MSIL">
-      <HintPath>..\..\..\ArcGIS-Libraries\DeveloperKit10.2\DotNet\ESRI.ArcGIS.DataSourcesFile.dll</HintPath>
       <SpecificVersion>False</SpecificVersion>
-      <Private>False</Private>
       <EmbedInteropTypes>True</EmbedInteropTypes>
+      <HintPath>..\..\..\ArcGIS-Libraries\DeveloperKit10.1\DotNet\ESRI.ArcGIS.DataSourcesFile.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="ESRI.ArcGIS.DataSourcesGDB, Version=10.2.0.0, Culture=neutral, PublicKeyToken=8fc3cc631e44ad86, processorArchitecture=MSIL">
-      <HintPath>..\..\..\ArcGIS-Libraries\DeveloperKit10.2\DotNet\ESRI.ArcGIS.DataSourcesGDB.dll</HintPath>
       <SpecificVersion>False</SpecificVersion>
-      <Private>False</Private>
       <EmbedInteropTypes>True</EmbedInteropTypes>
+      <HintPath>..\..\..\ArcGIS-Libraries\DeveloperKit10.1\DotNet\ESRI.ArcGIS.DataSourcesGDB.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="ESRI.ArcGIS.DataSourcesOleDB, Version=10.2.0.0, Culture=neutral, PublicKeyToken=8fc3cc631e44ad86, processorArchitecture=MSIL">
-      <HintPath>..\..\..\ArcGIS-Libraries\DeveloperKit10.2\DotNet\ESRI.ArcGIS.DataSourcesOleDB.dll</HintPath>
       <SpecificVersion>False</SpecificVersion>
-      <Private>False</Private>
       <EmbedInteropTypes>True</EmbedInteropTypes>
+      <HintPath>..\..\..\ArcGIS-Libraries\DeveloperKit10.1\DotNet\ESRI.ArcGIS.DataSourcesOleDB.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="ESRI.ArcGIS.Desktop.AddIns, Version=10.2.0.0, Culture=neutral, PublicKeyToken=8fc3cc631e44ad86, processorArchitecture=MSIL">
-      <HintPath>..\..\..\ArcGIS-Libraries\DeveloperKit10.2\DotNet\ESRI.ArcGIS.Desktop.AddIns.dll</HintPath>
       <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\ArcGIS-Libraries\DeveloperKit10.1\DotNet\ESRI.ArcGIS.Desktop.AddIns.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="ESRI.ArcGIS.Display, Version=10.2.0.0, Culture=neutral, PublicKeyToken=8fc3cc631e44ad86, processorArchitecture=MSIL">
-      <HintPath>..\..\..\ArcGIS-Libraries\DeveloperKit10.2\DotNet\ESRI.ArcGIS.Display.dll</HintPath>
       <SpecificVersion>False</SpecificVersion>
-      <Private>False</Private>
       <EmbedInteropTypes>True</EmbedInteropTypes>
+      <HintPath>..\..\..\ArcGIS-Libraries\DeveloperKit10.1\DotNet\ESRI.ArcGIS.Display.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="ESRI.ArcGIS.Framework, Version=10.2.0.0, Culture=neutral, PublicKeyToken=8fc3cc631e44ad86, processorArchitecture=MSIL">
-      <HintPath>..\..\..\ArcGIS-Libraries\DeveloperKit10.2\DotNet\ESRI.ArcGIS.Framework.dll</HintPath>
       <SpecificVersion>False</SpecificVersion>
+      <EmbedInteropTypes>True</EmbedInteropTypes>
+      <HintPath>..\..\..\ArcGIS-Libraries\DeveloperKit10.1\DotNet\ESRI.ArcGIS.Framework.dll</HintPath>
       <Private>False</Private>
-      <EmbedInteropTypes>False</EmbedInteropTypes>
     </Reference>
     <Reference Include="ESRI.ArcGIS.Geodatabase, Version=10.2.0.0, Culture=neutral, PublicKeyToken=8fc3cc631e44ad86, processorArchitecture=MSIL">
-      <HintPath>..\..\..\ArcGIS-Libraries\DeveloperKit10.2\DotNet\ESRI.ArcGIS.Geodatabase.dll</HintPath>
       <SpecificVersion>False</SpecificVersion>
-      <Private>False</Private>
       <EmbedInteropTypes>True</EmbedInteropTypes>
+      <HintPath>..\..\..\ArcGIS-Libraries\DeveloperKit10.1\DotNet\ESRI.ArcGIS.Geodatabase.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="ESRI.ArcGIS.GeoDatabaseUI, Version=10.2.0.0, Culture=neutral, PublicKeyToken=8fc3cc631e44ad86, processorArchitecture=MSIL">
-      <HintPath>..\..\..\ArcGIS-Libraries\DeveloperKit10.2\DotNet\ESRI.ArcGIS.GeoDatabaseUI.dll</HintPath>
       <SpecificVersion>False</SpecificVersion>
-      <Private>False</Private>
       <EmbedInteropTypes>True</EmbedInteropTypes>
+      <HintPath>..\..\..\ArcGIS-Libraries\DeveloperKit10.1\DotNet\ESRI.ArcGIS.GeoDatabaseUI.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="ESRI.ArcGIS.Geometry, Version=10.2.0.0, Culture=neutral, PublicKeyToken=8fc3cc631e44ad86, processorArchitecture=MSIL">
-      <HintPath>..\..\..\ArcGIS-Libraries\DeveloperKit10.2\DotNet\ESRI.ArcGIS.Geometry.dll</HintPath>
       <SpecificVersion>False</SpecificVersion>
-      <Private>False</Private>
       <EmbedInteropTypes>True</EmbedInteropTypes>
+      <HintPath>..\..\..\ArcGIS-Libraries\DeveloperKit10.1\DotNet\ESRI.ArcGIS.Geometry.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="ESRI.ArcGIS.Geoprocessing, Version=10.2.0.0, Culture=neutral, PublicKeyToken=8fc3cc631e44ad86, processorArchitecture=MSIL">
-      <HintPath>..\..\..\ArcGIS-Libraries\DeveloperKit10.2\DotNet\ESRI.ArcGIS.Geoprocessing.dll</HintPath>
       <SpecificVersion>False</SpecificVersion>
-      <Private>False</Private>
       <EmbedInteropTypes>True</EmbedInteropTypes>
+      <HintPath>..\..\..\ArcGIS-Libraries\DeveloperKit10.1\DotNet\ESRI.ArcGIS.Geoprocessing.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="ESRI.ArcGIS.Geoprocessor, Version=10.2.0.0, Culture=neutral, PublicKeyToken=8fc3cc631e44ad86, processorArchitecture=MSIL">
-      <HintPath>..\..\..\ArcGIS-Libraries\DeveloperKit10.2\DotNet\ESRI.ArcGIS.Geoprocessor.dll</HintPath>
       <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\ArcGIS-Libraries\DeveloperKit10.1\DotNet\ESRI.ArcGIS.Geoprocessor.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="ESRI.ArcGIS.System, Version=10.2.0.0, Culture=neutral, PublicKeyToken=8fc3cc631e44ad86, processorArchitecture=MSIL">
-      <HintPath>..\..\..\ArcGIS-Libraries\DeveloperKit10.2\DotNet\ESRI.ArcGIS.System.dll</HintPath>
       <SpecificVersion>False</SpecificVersion>
+      <EmbedInteropTypes>True</EmbedInteropTypes>
+      <HintPath>..\..\..\ArcGIS-Libraries\DeveloperKit10.1\DotNet\ESRI.ArcGIS.System.dll</HintPath>
       <Private>False</Private>
-      <EmbedInteropTypes>False</EmbedInteropTypes>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -187,7 +187,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="DataSelector.cs" />
-    <AddInContent Include="Images\Button1.png" />
+    <AddInContent Include="Images\btnDataSelector.png" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="frmChooseConfig.resx">

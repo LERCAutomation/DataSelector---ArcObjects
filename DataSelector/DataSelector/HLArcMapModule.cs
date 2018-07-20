@@ -18,7 +18,6 @@
 // You should have received a copy of the GNU General Public License
 // along with DataSelector.  If not, see <http://www.gnu.org/licenses/>.
 
-
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -417,7 +416,7 @@ namespace HLArcMapModule
             {
                 IWorkspaceFactory pWSF = GetWorkspaceFactory(aFilePath);
                 IWorkspace2 pWS = (IWorkspace2)pWSF.OpenFromFile(aFilePath, 0);
-                if (pWS.get_NameExists(ESRI.ArcGIS.Geodatabase.esriDatasetType .esriDTTable, aDatasetName))
+                if (pWS.get_NameExists(ESRI.ArcGIS.Geodatabase.esriDatasetType.esriDTTable, aDatasetName))
                     return true;
                 else
                     return false;

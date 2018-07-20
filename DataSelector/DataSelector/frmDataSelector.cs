@@ -18,7 +18,6 @@
 // You should have received a copy of the GNU General Public License
 // along with DataSelector.  If not, see <http://www.gnu.org/licenses/>.
 
-
 using System;
 using System.IO;
 using System.Collections.Generic;
@@ -120,7 +119,7 @@ namespace DataSelector
                         var result = myConfigForm.ShowDialog();
                         if (result == System.Windows.Forms.DialogResult.OK)
                         {
-                            strConfigFile = strXMLFolder + "\\" + myConfigForm.ChosenXMLFile;
+                            strConfigFile = strXMLFolder + @"\" + myConfigForm.ChosenXMLFile;
                         }
                         else
                         {
@@ -132,7 +131,7 @@ namespace DataSelector
                 }
                 else
                 {
-                    strConfigFile = strXMLFolder + "\\" + myLaunchConfig.DefaultXML; // don't allow the user to choose, just use the default.
+                    strConfigFile = strXMLFolder + @"\" + myLaunchConfig.DefaultXML; // don't allow the user to choose, just use the default.
                     // Just check it exists, though.
                     if (!myFileFuncs.FileExists(strConfigFile))
                     {

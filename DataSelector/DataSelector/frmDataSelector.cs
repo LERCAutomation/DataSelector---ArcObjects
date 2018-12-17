@@ -161,6 +161,13 @@ namespace DataSelector
                 }
             }
 
+            // Close the form if there are any errors at this point.
+            if (!blOpenForm)
+            {
+                Load += (s, e) => Close();
+                return;
+            }
+
             m_strSaveFile = "";
 
             myArcSDEFuncs = new ArcSDEFunctions();

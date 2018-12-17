@@ -48,6 +48,7 @@ namespace DataSelector
         /// </summary>
         private void InitializeComponent()
         {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(frmDataSelector));
             this.lblColumns = new System.Windows.Forms.Label();
             this.txtColumns = new System.Windows.Forms.TextBox();
             this.lblWhere = new System.Windows.Forms.Label();
@@ -268,8 +269,12 @@ namespace DataSelector
             this.Controls.Add(this.lblWhere);
             this.Controls.Add(this.txtColumns);
             this.Controls.Add(this.lblColumns);
+            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
+            this.MaximizeBox = false;
+            this.MinimizeBox = false;
             this.Name = "frmDataSelector";
-            this.Text = "Data Selector 1.2.1";
+            var version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
+            this.Text = "Data Selector " + string.Format("{0}.{1}.{2}", version.Major, version.Minor, version.Build);
             this.ResumeLayout(false);
             this.PerformLayout();
 

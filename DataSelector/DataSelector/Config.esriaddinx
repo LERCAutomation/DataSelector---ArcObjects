@@ -2,11 +2,11 @@
   <Name>DataSelector</Name>
   <AddInID>{b858bb02-f5c6-4c49-886a-96f8d918d8a7}</AddInID>
   <Description>Define, load, save and run SQL queries.&#13;&#10;(c) 2016-2017 SxBRC, 2017-2018 TVERC.</Description>
-  <Version>1.2.1</Version>
+  <Version>1.2.2</Version>
   <Image>Images\DataSelector.png</Image>
   <Author>Hester Lyons</Author>
   <Company>Hester Lyons Consulting</Company>
-  <Date>08/06/2018</Date>
+  <Date>22/11/2018</Date>
   <Targets>
     <Target name="Desktop" version="10.1" />
   </Targets>
